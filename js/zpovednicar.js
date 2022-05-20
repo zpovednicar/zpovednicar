@@ -255,15 +255,6 @@ sinner(function () {
                         parent.removeChild(parent.firstChild);
                     }
                 },
-                formDisablement: function (id, disable) {
-                    let form = document.getElementById(id);
-
-                    disable = disable || false;
-
-                    for (let i = 0, l = form.elements.length; i < l; i++) {
-                        form.elements[i].disabled = disable;
-                    }
-                },
                 isVip: function (infoEl) {
                     let imgs = infoEl.querySelectorAll('img'),
                         vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
@@ -943,23 +934,23 @@ sinner(function () {
                     '</div>' +
                     '<div id="tabSettings">' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     '<p>' +
                     Utils.i18n('helpLabel') +
                     ':</p>' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<p>' +
                     '<a href="https://www.zpovednicar.cz/" target="_blank">www.zpovednicar.cz</a>' +
                     '</p>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     Utils.i18n('settingsHideDeleted') +
                     ':' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<input type="radio" name="hideDeleted" id="hideDeletedYes"' + (config.hideDeleted ? ' checked' : '') + ' value="1">&nbsp;' +
                     '<label for="hideDeletedYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
                     '<input type="radio" name="hideDeleted" id="hideDeletedNo"' + (config.hideDeleted ? '' : ' checked') + ' value="0">&nbsp;' +
@@ -967,12 +958,12 @@ sinner(function () {
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     '<p>' +
                     Utils.i18n('settingsHideUnregistered') +
                     ':</p>' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<p>' +
                     '<input type="radio" name="hideUnregistered" id="hideUnregisteredYes"' + (config.hideUnregistered ? ' checked' : '') + ' value="1">&nbsp;' +
                     '<label for="hideUnregisteredYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
@@ -982,11 +973,11 @@ sinner(function () {
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     Utils.i18n('settingsTransformAnchors') +
                     ':' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<input type="radio" name="transformAnchors" id="transformAnchorsYes"' + (config.transformAnchors ? ' checked' : '') + ' value="1">&nbsp;' +
                     '<label for="transformAnchorsYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
                     '<input type="radio" name="transformAnchors" id="transformAnchorsNo"' + (config.transformAnchors ? '' : ' checked') + ' value="0">&nbsp;' +
@@ -994,12 +985,12 @@ sinner(function () {
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     '<p>' +
                     Utils.i18n('settingsYoutubeThumbnails') +
                     ':</p>' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<p>' +
                     '<select id="youtubeThumbnail">';
                 config.youtubeThumbnails.forEach(function (thumb, key) {
@@ -1011,10 +1002,10 @@ sinner(function () {
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     Utils.i18n('settingsDomain') +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<select id="enforceDomain">';
                 config.domains.forEach(function (value, key) {
                     modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
@@ -1024,21 +1015,21 @@ sinner(function () {
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     '<p>' +
                     Utils.i18n('settingsColor') +
                     ':</p>' +
                     '</div>' +
-                    '<div class="column">' +
+                    '<div class="column-narrow">' +
                     '<p class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></p>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
-                    '<div class="column">' +
+                    '<div class="column-wide">' +
                     Utils.i18n('settingsBackups') +
                     ':' +
                     '</div>' +
-                    '<div class="column">';
+                    '<div class="column-narrow">';
                 if (isFileSaverSupported) {
                     modalContent +=
                         '<button id="settingsBackup">' + Utils.i18n('settingsBackup') + '</button>' +
@@ -1088,23 +1079,21 @@ sinner(function () {
                 });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
                 document.querySelector('div.tingle-modal').addEventListener('tabby', function (e) {
+                    let footer = document.querySelector('div.tingle-modal-box__footer');
+
                     switch (e.target.hash.substr(1)) {
                         case 'tabHighlight':
-                            Utils.Dom.formDisablement('sinnerDataForm');
                             type.value = 1;
                             submit.value = Utils.i18n('settingsHighlight');
-                            document.querySelector('div.tingle-modal-box__footer').style.display = 'block';
+                            footer.style.display = 'block';
                             break;
                         case 'tabHide':
-                            Utils.Dom.formDisablement('sinnerDataForm');
                             type.value = 0;
                             submit.value = Utils.i18n('settingsHide');
-                            document.querySelector('div.tingle-modal-box__footer').style.display = 'block';
+                            footer.style.display = 'block';
                             break;
                         default:
-                            Utils.Dom.formDisablement('sinnerDataForm', true);
-                            Utils.Dom.formDisablement('sinnerDataForm', true);
-                            document.querySelector('div.tingle-modal-box__footer').style.display = 'none';
+                            footer.style.display = 'none';
                             break;
                     }
                 });
