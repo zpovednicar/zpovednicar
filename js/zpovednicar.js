@@ -1245,12 +1245,13 @@ sinner(function () {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('span.signunreg, span.signnick'),
+                isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
                     .parentElement.parentElement.parentElement.parentElement;
 
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (rel) {
                 Utils.Dom.removeAllChildNodes(rel);
@@ -1261,6 +1262,18 @@ sinner(function () {
                 if (!parent.classList.contains('highlightUser')) {
                     parent.classList.add('highlightUser');
                 }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            } else if (!isQuotes) { // quotes are rendered without userinfo
+                let info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
+
+                info.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1274,9 +1287,8 @@ sinner(function () {
                     container3 = container2.previousElementSibling,
                     containers = [container1, container2, container3];
 
-                // beware that this class is used for both detail/quotes pages
-                // but quotes are rendered without userinfo
-                if (window.location.pathname.startsWith('/detail.php')
+                // quotes are rendered without userinfo
+                if (!isQuotes
                     && config.hideUnregistered
                     && !isRegistered
                 ) {
@@ -1412,10 +1424,11 @@ sinner(function () {
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('td.profheader'),
                 text = el.innerText.trim(),
+                info = document.querySelector('table.infoltext tbody').firstElementChild.firstElementChild,
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement;
 
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (rel) {
                 Utils.Dom.removeAllChildNodes(rel);
@@ -1426,6 +1439,18 @@ sinner(function () {
                 if (!parent.classList.contains('highlightUser')) {
                     parent.classList.add('highlightUser');
                 }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            } else {
+                let linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
+
+                info.appendChild(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
+                linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
             }
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
