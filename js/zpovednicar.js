@@ -1437,6 +1437,18 @@ sinner(function () {
                 if (!parent.classList.contains('highlightUser')) {
                     parent.classList.add('highlightUser');
                 }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            } else {
+                let linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
+
+                info.appendChild(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
+                linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
             }
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
