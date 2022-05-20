@@ -1245,6 +1245,7 @@ sinner(function () {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('span.signunreg, span.signnick'),
+                isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
@@ -1263,6 +1264,17 @@ sinner(function () {
                 }
             }
 
+            // quotes are rendered without userinfo
+            if (!isQuotes) {
+                let info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
+
+                info.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
+            }
+
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
                 let text = el.innerText.trim(),
                     nick = Utils.String.compress(text, true, true, true),
@@ -1274,9 +1286,8 @@ sinner(function () {
                     container3 = container2.previousElementSibling,
                     containers = [container1, container2, container3];
 
-                // beware that this class is used for both detail/quotes pages
-                // but quotes are rendered without userinfo
-                if (window.location.pathname.startsWith('/detail.php')
+                // quotes are rendered without userinfo
+                if (!isQuotes
                     && config.hideUnregistered
                     && !isRegistered
                 ) {
