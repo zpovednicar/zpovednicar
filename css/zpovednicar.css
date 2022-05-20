@@ -55,7 +55,7 @@ ul.sinnerList a, ul.sinnerList a:visited {
     display: none;
 }
 
-span.strikeWord {
+span.strikeWord, span.strikeUser, span.strikeUser a, td.strikeUser {
     text-decoration: line-through;
     color: #000000;
 }
