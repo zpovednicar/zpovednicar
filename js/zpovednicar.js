@@ -1251,7 +1251,7 @@ sinner(function () {
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
                     .parentElement.parentElement.parentElement.parentElement;
 
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (rel) {
                 Utils.Dom.removeAllChildNodes(rel);
@@ -1262,10 +1262,11 @@ sinner(function () {
                 if (!parent.classList.contains('highlightUser')) {
                     parent.classList.add('highlightUser');
                 }
-            }
-
-            // quotes are rendered without userinfo
-            if (!isQuotes) {
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            } else if (!isQuotes) { // quotes are rendered without userinfo
                 let info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
                     linksEl = Object.assign(document.createElement('span'), {
                         className: 'userLinks'
@@ -1423,10 +1424,11 @@ sinner(function () {
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('td.profheader'),
                 text = el.innerText.trim(),
+                info = document.querySelector('table.infoltext tbody').firstElementChild.firstElementChild,
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement;
 
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (rel) {
                 Utils.Dom.removeAllChildNodes(rel);
