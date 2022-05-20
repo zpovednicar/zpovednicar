@@ -61,6 +61,7 @@ sinner(function () {
                 settingsDomain: 'Vynutit doménu',
                 settingsHideDeleted: 'Skrývat smazané',
                 settingsHideUnregistered: 'Skrývat neregistrované',
+                settingsTransformAnchors: 'Odkazy otevřít ve stejném okně',
                 settingsYoutubeThumbnails: 'Náhledy Youtube videí',
                 idiomContentLength: 'Minimální délka jsou [length] znaky',
                 idiomContentExists: 'Záznam existuje ve [highlight], obojí najednou není možné',
@@ -109,6 +110,7 @@ sinner(function () {
                 settingsDomain: 'Vynútiť doménu',
                 settingsHideDeleted: 'Skrývať zmazané',
                 settingsHideUnregistered: 'Skrývať neregistrované',
+                settingsTransformAnchors: 'Odkazy otvoriť v rovnakom okne',
                 settingsYoutubeThumbnails: 'Náhľady Youtube videí',
                 idiomContentLength: 'Minimálna dĺžka sú [length] znaky',
                 idiomContentExists: 'Záznam existuje vo [highlight], oboje naraz nie je možné',
@@ -137,6 +139,7 @@ sinner(function () {
             hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
             useHiding: GM_getValue('sinner.useHiding', true),
+            transformAnchors: GM_getValue('sinner.transformAnchors', false),
             domains: new Map([
                 ['.', i18n[i18n.language].domainsNone],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
@@ -389,6 +392,19 @@ sinner(function () {
                     if (config.useHighlighting) {
                         Utils.Dom.embedHighlightUserLink(el, nick);
                     }
+                },
+                transformAnchorTargets: function() {
+                    if (config.transformAnchors) {
+                        document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                            link.classList.add('transformedAnchor');
+                            link.removeAttribute('target');
+                        });
+                    } else {
+                        document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
+                            link.target = '_blank';
+                            link.classList.remove('transformedAnchor');
+                        });
+                    }
                 }
             },
             String: {
@@ -633,6 +649,10 @@ sinner(function () {
             useHidingChangeListener: function (key, old_value, new_value, remote) {
                 config.useHiding = new_value;
                 page.process();
+            },
+            transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
+                config.transformAnchors = new_value;
+                Utils.Dom.transformAnchorTargets();
             },
             showRecords: function (subject, highlight) {
                 db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
@@ -963,29 +983,27 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column">' +
-                    Utils.i18n('settingsYoutubeThumbnails') +
+                    Utils.i18n('settingsTransformAnchors') +
                     ':' +
                     '</div>' +
                     '<div class="column">' +
-                    '<select id="youtubeThumbnail">';
-                config.youtubeThumbnails.forEach(function (thumb, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
-                })
-                modalContent +=
-                    '</select>' +
+                    '<input type="radio" name="transformAnchors" id="transformAnchorsYes"' + (config.transformAnchors ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="transformAnchorsYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="transformAnchors" id="transformAnchorsNo"' + (config.transformAnchors ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="transformAnchorsNo">' + Utils.i18n('no') + '</label>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column">' +
                     '<p>' +
-                    Utils.i18n('settingsDomain') +
+                    Utils.i18n('settingsYoutubeThumbnails') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column">' +
                     '<p>' +
-                    '<select id="enforceDomain">';
-                config.domains.forEach(function (value, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                    '<select id="youtubeThumbnail">';
+                config.youtubeThumbnails.forEach(function (thumb, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
                 })
                 modalContent +=
                     '</select>' +
@@ -994,21 +1012,33 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column">' +
-                    Utils.i18n('settingsColor') +
-                    ':' +
+                    Utils.i18n('settingsDomain') +
                     '</div>' +
                     '<div class="column">' +
-                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
+                    '<select id="enforceDomain">';
+                config.domains.forEach(function (value, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                })
+                modalContent +=
+                    '</select>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column">' +
                     '<p>' +
-                    Utils.i18n('settingsBackups') +
+                    Utils.i18n('settingsColor') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column">' +
-                    '<p>';
+                    '<p class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column">' +
+                    Utils.i18n('settingsBackups') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column">';
                 if (isFileSaverSupported) {
                     modalContent +=
                         '<button id="settingsBackup">' + Utils.i18n('settingsBackup') + '</button>' +
@@ -1018,7 +1048,6 @@ sinner(function () {
                     modalContent += Utils.i18n('fileSaverUnsupported');
                 }
                 modalContent +=
-                    '</p>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
@@ -1052,7 +1081,11 @@ sinner(function () {
                         GM_setValue('sinner.hideUnregistered', Boolean(parseInt(e.target.value)))
                     });
                 });
-
+                document.querySelectorAll('input[name="transformAnchors"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        GM_setValue('sinner.transformAnchors', Boolean(parseInt(e.target.value)))
+                    });
+                });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
                 document.querySelector('div.tingle-modal').addEventListener('tabby', function (e) {
                     switch (e.target.hash.substr(1)) {
@@ -1122,6 +1155,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.hideUnregistered', Settings.hideUnregisteredChangeListener);
             GM_addValueChangeListener('sinner.useHighlighting', Settings.useHighlightingChangeListener);
             GM_addValueChangeListener('sinner.useHiding', Settings.useHidingChangeListener);
+            GM_addValueChangeListener('sinner.transformAnchors', Settings.transformAnchorsChangeListener);
         }
 
         modal(e) {
@@ -1157,9 +1191,14 @@ sinner(function () {
         async processWords() {
         }
 
+        processAnchors() {
+            Utils.Dom.transformAnchorTargets();
+        }
+
         async process() {
             this.processUsers();
             this.processWords();
+            this.processAnchors();
         }
     }
 
@@ -1665,6 +1704,8 @@ sinner(function () {
                     this.processWords();
                     break;
             }
+
+            this.processAnchors();
         }
     }
 
