@@ -326,7 +326,7 @@ sinner(function () {
                         Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
                     }
                 },
-                embedHighlightUserLink: function (el, nick, size) {
+                embedHighlightUserLink: function (el, nick) {
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
                             title: Utils.i18n('highlightUser'),
@@ -384,7 +384,7 @@ sinner(function () {
                         Utils.Dom.embedHighlightUserLink(el, nick);
                     }
                 },
-                transformAnchorTargets: function() {
+                transformAnchorTargets: function () {
                     if (config.transformAnchors) {
                         document.querySelectorAll("a[target='_blank']").forEach(function (link) {
                             link.classList.add('transformedAnchor');
