@@ -62,6 +62,7 @@ sinner(function () {
                 settingsHideDeleted: 'Skrývat smazané',
                 settingsHideUnregistered: 'Skrývat neregistrované',
                 settingsTransformAnchors: 'Odkazy otevřít ve stejném okně',
+                settingsTransformAvatars: 'Nahrazovat obrázek v profilu',
                 settingsYoutubeThumbnails: 'Náhledy Youtube videí',
                 idiomContentLength: 'Minimální délka jsou [length] znaky',
                 idiomContentExists: 'Záznam existuje ve [highlight], obojí najednou není možné',
@@ -111,6 +112,7 @@ sinner(function () {
                 settingsHideDeleted: 'Skrývať zmazané',
                 settingsHideUnregistered: 'Skrývať neregistrované',
                 settingsTransformAnchors: 'Odkazy otvoriť v rovnakom okne',
+                settingsTransformAvatars: 'Nahradzovať obrázok v profile',
                 settingsYoutubeThumbnails: 'Náhľady Youtube videí',
                 idiomContentLength: 'Minimálna dĺžka sú [length] znaky',
                 idiomContentExists: 'Záznam existuje vo [highlight], oboje naraz nie je možné',
@@ -140,6 +142,7 @@ sinner(function () {
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
+            transformAvatars: GM_getValue('sinner.transformAvatars', false),
             domains: new Map([
                 ['.', i18n[i18n.language].domainsNone],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
@@ -280,7 +283,8 @@ sinner(function () {
                             let link = Object.assign(document.createElement('a'), {
                                     href: url,
                                     title: url,
-                                    target: '_blank'
+                                    target: '_blank',
+                                    rel: 'noreferrer noopener nofollow'
                                 }),
                                 linkText = document.createTextNode(url);
 
@@ -338,7 +342,7 @@ sinner(function () {
                             height: 15,
                             border: 0,
                             align: 'bottom',
-                            alt: Utils.i18n('highlightUser'),
+                            alt: Utils.i18n('highlightUser')
                         });
 
                     link.appendChild(linkContent);
@@ -396,6 +400,58 @@ sinner(function () {
                             link.classList.remove('transformedAnchor');
                         });
                     }
+                },
+                replaceAvatar: function (container, src) {
+                    if (!config.transformAvatars) {
+                        let avatar = document.querySelector('img.avatar');
+
+                        if (avatar !== null) {
+                            let container = avatar.parentElement.parentElement,
+                                photo = container.querySelector('img.transformedAvatar');
+
+                            avatar.parentElement.remove();
+
+                            if (photo !== null) {
+                                photo.classList.remove('transformedAvatar');
+                            }
+                        }
+
+                        return;
+                    }
+
+                    if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
+                        return;
+                    }
+
+                    let photo = container.querySelector('img'),
+                        img = Object.assign(document.createElement('img'), {
+                            src: src,
+                            border: 0,
+                            alt: 'Avatar',
+                            className: 'avatar',
+                            crossorigin: 'anonymous',
+                            decoding: 'sync',
+                            loading: 'eager',
+                            fetchpriority: 'high',
+                            referrerpolicy: 'no-referrer',
+                            width: 163
+                        }),
+                        link = Object.assign(document.createElement('a'), {
+                            href: src,
+                            title: src,
+                            rel: 'noreferrer noopener nofollow'
+                        });
+
+                    if (!config.transformAnchors) {
+                        link.target = '_blank';
+                    }
+
+                    if (photo !== null) {
+                        photo.classList.add('transformedAvatar');
+                    }
+
+                    link.appendChild(img);
+                    container.appendChild(link);
                 }
             },
             String: {
@@ -644,6 +700,10 @@ sinner(function () {
             transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
                 config.transformAnchors = new_value;
                 Utils.Dom.transformAnchorTargets();
+            },
+            transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
+                config.transformAvatars = new_value;
+                page.processAvatars();
             },
             showRecords: function (subject, highlight) {
                 db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
@@ -987,14 +1047,43 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsYoutubeThumbnails') +
+                    Utils.i18n('settingsTransformAvatars') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>' +
+                    '<input type="radio" name="transformAvatars" id="transformAvatarsYes"' + (config.transformAvatars ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="transformAvatarsYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="transformAvatars" id="transformAvatarsNo"' + (config.transformAvatars ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="transformAvatarsNo">' + Utils.i18n('no') + '</label>' +
+                    '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    Utils.i18n('settingsYoutubeThumbnails') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
                     '<select id="youtubeThumbnail">';
                 config.youtubeThumbnails.forEach(function (thumb, key) {
                     modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
+                })
+                modalContent +=
+                    '</select>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    '<p>' +
+                    Utils.i18n('settingsDomain') +
+                    ':</p>' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
+                    '<p>' +
+                    '<select id="enforceDomain">';
+                config.domains.forEach(function (value, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
                 })
                 modalContent +=
                     '</select>' +
@@ -1003,33 +1092,21 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    Utils.i18n('settingsDomain') +
+                    Utils.i18n('settingsColor') +
+                    ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<select id="enforceDomain">';
-                config.domains.forEach(function (value, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
-                })
-                modalContent +=
-                    '</select>' +
+                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsColor') +
+                    Utils.i18n('settingsBackups') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<p class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></p>' +
-                    '</div>' +
-                    '</div>' +
-                    '<div class="row">' +
-                    '<div class="column-wide">' +
-                    Utils.i18n('settingsBackups') +
-                    ':' +
-                    '</div>' +
-                    '<div class="column-narrow">';
+                    '<p>';
                 if (isFileSaverSupported) {
                     modalContent +=
                         '<button id="settingsBackup">' + Utils.i18n('settingsBackup') + '</button>' +
@@ -1039,6 +1116,7 @@ sinner(function () {
                     modalContent += Utils.i18n('fileSaverUnsupported');
                 }
                 modalContent +=
+                    '</p>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
@@ -1075,6 +1153,11 @@ sinner(function () {
                 document.querySelectorAll('input[name="transformAnchors"]').forEach(function (input) {
                     input.addEventListener('change', function (e) {
                         GM_setValue('sinner.transformAnchors', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="transformAvatars"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        GM_setValue('sinner.transformAvatars', Boolean(parseInt(e.target.value)))
                     });
                 });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
@@ -1145,6 +1228,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.useHighlighting', Settings.useHighlightingChangeListener);
             GM_addValueChangeListener('sinner.useHiding', Settings.useHidingChangeListener);
             GM_addValueChangeListener('sinner.transformAnchors', Settings.transformAnchorsChangeListener);
+            GM_addValueChangeListener('sinner.transformAvatars', Settings.transformAvatarsChangeListener);
         }
 
         modal(e) {
@@ -1184,10 +1268,14 @@ sinner(function () {
             Utils.Dom.transformAnchorTargets();
         }
 
+        processAvatars() {
+        }
+
         async process() {
             this.processUsers();
             this.processWords();
             this.processAnchors();
+            this.processAvatars();
         }
     }
 
@@ -1538,6 +1626,14 @@ sinner(function () {
                 }
             });
         }
+
+        processAvatars() {
+            let info = document.querySelector('table.infoltext tbody'),
+                www = info.children[info.children.length - 5].innerText.trim().slice(13).trim(),
+                container = document.querySelector('td.photo');
+
+            Utils.Dom.replaceAvatar(container, www);
+        }
     }
 
     class BookPage extends Page {
@@ -1695,6 +1791,7 @@ sinner(function () {
             }
 
             this.processAnchors();
+            this.processAvatars();
         }
     }
 
