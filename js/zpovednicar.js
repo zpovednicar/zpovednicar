@@ -140,6 +140,7 @@ sinner(function () {
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
+            transformAvatars: GM_getValue('sinner.transformAvatars', false),
             domains: new Map([
                 ['.', i18n[i18n.language].domainsNone],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
@@ -338,7 +339,7 @@ sinner(function () {
                             height: 15,
                             border: 0,
                             align: 'bottom',
-                            alt: Utils.i18n('highlightUser'),
+                            alt: Utils.i18n('highlightUser')
                         });
 
                     link.appendChild(linkContent);
@@ -396,6 +397,40 @@ sinner(function () {
                             link.classList.remove('transformedAnchor');
                         });
                     }
+                },
+                replaceAvatar: function (container, src) {
+                    if (!config.transformAvatars || !src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
+                        return;
+                    }
+
+                    let photo = container.querySelector('img'),
+                        img = Object.assign(document.createElement('img'), {
+                            src: src,
+                            border: 0,
+                            alt: 'Avatar',
+                            className: 'avatar',
+                            crossorigin: 'anonymous',
+                            decoding: 'sync',
+                            loading: 'eager',
+                            fetchpriority: 'high',
+                            referrerpolicy: 'no-referrer',
+                            width: 163
+                        }),
+                        link = Object.assign(document.createElement('a'), {
+                            href: src,
+                            title: src
+                        });
+
+                    if (!config.transformAnchors) {
+                        link.target = '_blank';
+                    }
+
+                    if (photo !== null) {
+                        photo.remove();
+                    }
+
+                    link.appendChild(img);
+                    container.appendChild(link);
                 }
             },
             String: {
@@ -644,6 +679,10 @@ sinner(function () {
             transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
                 config.transformAnchors = new_value;
                 Utils.Dom.transformAnchorTargets();
+            },
+            transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
+                config.transformAvatars = new_value;
+                page.processAvatars();
             },
             showRecords: function (subject, highlight) {
                 db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
@@ -1145,6 +1184,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.useHighlighting', Settings.useHighlightingChangeListener);
             GM_addValueChangeListener('sinner.useHiding', Settings.useHidingChangeListener);
             GM_addValueChangeListener('sinner.transformAnchors', Settings.transformAnchorsChangeListener);
+            GM_addValueChangeListener('sinner.transformAvatars', Settings.transformAvatarsChangeListener);
         }
 
         modal(e) {
@@ -1184,10 +1224,14 @@ sinner(function () {
             Utils.Dom.transformAnchorTargets();
         }
 
+        processAvatars() {
+        }
+
         async process() {
             this.processUsers();
             this.processWords();
             this.processAnchors();
+            this.processAvatars();
         }
     }
 
@@ -1538,6 +1582,14 @@ sinner(function () {
                 }
             });
         }
+
+        processAvatars() {
+            let info = document.querySelector('table.infoltext tbody'),
+                www = info.children[info.children.length - 5].innerText.trim().slice(13).trim(),
+                container = document.querySelector('td.photo');
+
+            Utils.Dom.replaceAvatar(container, www);
+        }
     }
 
     class BookPage extends Page {
@@ -1695,6 +1747,7 @@ sinner(function () {
             }
 
             this.processAnchors();
+            this.processAvatars();
         }
     }
 
