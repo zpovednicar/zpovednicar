@@ -110,6 +110,10 @@ span.userLinks img {
     height: 100%;
 }
 
+img.transformedAvatar {
+    display: none;
+}
+
 img.avatar {
     object-fit: contain;
 }
