@@ -80,7 +80,9 @@ sinner(function () {
                 thumbnailsNone: '-- žádné --',
                 helpLabel: 'Nápovědu najdete na',
                 hideUser: 'Skrývat přezdívku',
-                highlightUser: 'Zvýrazňovat přezdívku'
+                unhideUser: 'Přestat skrývat přezdívku',
+                highlightUser: 'Zvýrazňovat přezdívku',
+                unhighlightUser: 'Přestat zvýrazňovat přezdívku'
             },
             sk: {
                 yes: 'Áno',
@@ -130,7 +132,9 @@ sinner(function () {
                 thumbnailsNone: '-- žiadne --',
                 helpLabel: 'Nápovedu nájdete na',
                 hideUser: 'Skrývať prezývku',
-                highlightUser: 'Zvýrazňovať prezývku'
+                unhideUser: 'Prestať skrývať prezývku',
+                highlightUser: 'Zvýrazňovať prezývku',
+                unhighlightUser: 'Prestať zvýrazňovať prezývku'
             }
         },
         config = {
@@ -330,14 +334,17 @@ sinner(function () {
                         Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
                     }
                 },
-                embedHighlightUserLink: function (el, nick) {
+                embedHighlightUserLink: function (el, nick, highlighted) {
+                    highlighted = highlighted || false;
+
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: Utils.i18n('highlightUser'),
+                            title: highlighted ? Utils.i18n('unhighlightUser') : Utils.i18n('highlightUser'),
                             className: 'highlightUserLink'
                         }),
+                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
                         linkContent = Object.assign(document.createElement('img'), {
-                            src: '/grafika/s3.gif',
+                            src: src,
                             width: 15,
                             height: 15,
                             border: 0,
@@ -349,20 +356,29 @@ sinner(function () {
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
-                        Settings.highlightUser(nick);
+
+                        if (highlighted) {
+                            Utils.Db.removeUser(nick, 1);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 1);
+                        }
                     });
 
                     el.prepend(link);
                 },
-                embedHideUserLink: function (el, nick) {
+                embedHideUserLink: function (el, nick, hidden) {
+                    hidden = hidden || false;
+
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: Utils.i18n('hideUser'),
+                            title: hidden ? Utils.i18n('unhideUser') : Utils.i18n('hideUser'),
                             className: 'hideUserLink'
                         }),
+                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
+                        width = hidden ? 21 : 15,
                         linkContent = Object.assign(document.createElement('img'), {
-                            src: '/grafika/s8.gif',
-                            width: 15,
+                            src: src,
+                            width: width,
                             height: 15,
                             border: 0,
                             align: 'bottom',
@@ -373,19 +389,26 @@ sinner(function () {
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
-                        Settings.hideUser(nick);
+
+                        if (hidden) {
+                            Utils.Db.removeUser(nick, 0);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 0);
+                        }
                     });
 
                     el.prepend(link);
                     el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
-                embedUserLinks: function (el, nick) {
+                embedUserLinks: async function (el, nick, highlight, hide) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
                     if (config.useHiding) {
-                        Utils.Dom.embedHideUserLink(el, nick);
+                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
                     }
 
                     if (config.useHighlighting) {
-                        Utils.Dom.embedHighlightUserLink(el, nick);
+                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
                     }
                 },
                 transformAnchorTargets: function () {
@@ -402,23 +425,6 @@ sinner(function () {
                     }
                 },
                 replaceAvatar: function (container, src) {
-                    if (!config.transformAvatars) {
-                        let avatar = document.querySelector('img.avatar');
-
-                        if (avatar !== null) {
-                            let container = avatar.parentElement.parentElement,
-                                photo = container.querySelector('img.transformedAvatar');
-
-                            avatar.parentElement.remove();
-
-                            if (photo !== null) {
-                                photo.classList.remove('transformedAvatar');
-                            }
-                        }
-
-                        return;
-                    }
-
                     if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
                         return;
                     }
@@ -570,6 +576,51 @@ sinner(function () {
 
                     return database;
                 },
+                deleteIdiom: function (item) {
+                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
+                    }).catch(function (err) {
+                        console.error(err);
+                    });
+                },
+                removeUser: function (nick, highlight) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return rec.highlight === highlight && compressed === content;
+                    }).toArray(function (arr) {
+                        arr.forEach(function (item) {
+                            Utils.Db.deleteIdiom(item);
+                        });
+                    });
+                },
+                addOrToggleUser: function (nick, highlight) {
+                    let record = {
+                            subject: 'user',
+                            highlight: highlight,
+                            content: nick.trim()
+                        },
+                        compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return compressed === content;
+                    }).toArray(function (arr) {
+                        if (arr.length === 0) {
+                            return db.idioms.add(record);
+                        }
+
+                        arr.forEach(function (item) {
+                            db.idioms.update(item.uuid, {highlight: highlight});
+                        });
+                    });
+                },
                 getIdioms: function (subject, highlight, compress) {
                     highlight = highlight || false;
                     compress = compress || false;
@@ -584,7 +635,10 @@ sinner(function () {
                             results.push(compress ? Utils.String.compress(item.content, true, true, true) : item.content);
                         });
 
-                        return results;
+                        // distinct values only
+                        return results.filter(function (value, index, self) {
+                            return self.indexOf(value) === index;
+                        });
                     });
                 }
             }
@@ -595,12 +649,6 @@ sinner(function () {
             },
             getCaptionByItem: function (item) {
                 return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
-            },
-            deleteRecord: function (item) {
-                db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
-                }).catch(function (err) {
-                    console.error(err);
-                });
             },
             appendItem: function (item) {
                 let li = Object.assign(document.createElement('li'), {id: 'settingsModal-' + item.uuid}),
@@ -622,7 +670,7 @@ sinner(function () {
 
                     DayPilot.Modal.confirm(question, options).then(function (args) {
                         if (args.result === 'OK') {
-                            Settings.deleteRecord(item);
+                            Utils.Db.deleteIdiom(item);
                         }
                     });
                 });
@@ -751,24 +799,6 @@ sinner(function () {
                     console.error(err);
                 });
             },
-            hideUser: function (nick) {
-                let record = {
-                    subject: 'user',
-                    highlight: 0,
-                    content: nick.trim()
-                };
-
-                db.idioms.add(record);
-            },
-            highlightUser: function (nick) {
-                let record = {
-                    subject: 'user',
-                    highlight: 1,
-                    content: nick.trim()
-                };
-
-                db.idioms.add(record);
-            },
             observableListener: function (changes) {
                 changes.forEach(function (change) {
                     if (change.table !== 'idioms') {
@@ -778,6 +808,18 @@ sinner(function () {
                     switch (change.type) {
                         case 1:
                             Settings.appendItem(change.obj);
+                            break;
+                        case 2:
+                            if (typeof change.mods.highlight === 'undefined') {
+                                return;
+                            }
+
+                            let append = Object.assign(change.obj, {
+                                highlight: change.mods.highlight
+                            });
+
+                            Settings.removeItem(change.obj);
+                            Settings.appendItem(append);
                             break;
                         case 3:
                             Settings.removeItem(change.oldObj);
@@ -1365,7 +1407,11 @@ sinner(function () {
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
-                    .parentElement.parentElement.parentElement.parentElement;
+                    .parentElement.parentElement.parentElement.parentElement,
+                info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
 
             Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
@@ -1382,14 +1428,12 @@ sinner(function () {
                 if (!el.classList.contains('strikeUser')) {
                     el.classList.add('strikeUser');
                 }
-            } else if (!isQuotes) { // quotes are rendered without userinfo
-                let info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
-                    linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
+            }
 
+            // quotes header is rendered without userinfo (system account)
+            if (!isQuotes) {
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1401,9 +1445,12 @@ sinner(function () {
                     container1 = parent.parentElement.parentElement.parentElement.parentElement,
                     container2 = container1.previousElementSibling,
                     container3 = container2.previousElementSibling,
-                    containers = [container1, container2, container3];
+                    containers = [container1, container2, container3],
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
-                // quotes are rendered without userinfo
+                // all quote authors are rendered as unregistered
                 if (!isQuotes
                     && config.hideUnregistered
                     && !isRegistered
@@ -1425,14 +1472,10 @@ sinner(function () {
                             tr.classList.add('hiddenUser');
                         }
                     });
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    info.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                info.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
@@ -1542,7 +1585,10 @@ sinner(function () {
                 text = el.innerText.trim(),
                 info = document.querySelector('table.infoltext tbody').firstElementChild.firstElementChild,
                 nick = Utils.String.compress(text, true, true, true),
-                parent = el.parentElement;
+                parent = el.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
 
             Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
@@ -1559,22 +1605,21 @@ sinner(function () {
                 if (!el.classList.contains('strikeUser')) {
                     el.classList.add('strikeUser');
                 }
-            } else {
-                let linksEl = Object.assign(document.createElement('span'), {
-                    className: 'userLinks'
-                });
-
-                info.appendChild(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
-                linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
             }
+
+            info.appendChild(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+            linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
                 let isRegistered = el.innerText.indexOf('(') === -1,
                     index = isRegistered ? el.innerText.indexOf(':') : el.innerText.indexOf('(') - 1,
                     text = el.innerText.slice(0, index).trim(),
                     nick = Utils.String.compress(text, true, true, true),
-                    parent = el.parentElement.parentElement;
+                    parent = el.parentElement.parentElement,
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
                 if (config.hideUnregistered && !isRegistered) {
                     if (!parent.classList.contains('hiddenUser')) {
@@ -1590,14 +1635,10 @@ sinner(function () {
                     if (!parent.classList.contains('hiddenUser')) {
                         parent.classList.add('hiddenUser');
                     }
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    el.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                el.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
@@ -1631,12 +1672,26 @@ sinner(function () {
             let info = document.querySelector('table.infoltext tbody'),
                 wwwContainer = info.children[info.children.length - 5],
                 www = wwwContainer.innerText.trim().slice(13).trim(),
-                container = document.querySelector('td.photo');
+                container = document.querySelector('td.photo'),
+                avatar = document.querySelector('img.avatar');
 
             // Fixes ugly design effect of long URL in the table cell refs #13
             wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
 
-            Utils.Dom.replaceAvatar(container, www);
+            if (avatar !== null) {
+                let avatarContainer = avatar.parentElement.parentElement,
+                    photo = avatarContainer.querySelector('img.transformedAvatar');
+
+                avatar.parentElement.remove();
+
+                if (photo !== null) {
+                    photo.classList.remove('transformedAvatar');
+                }
+            }
+
+            if (config.transformAvatars) {
+                Utils.Dom.replaceAvatar(container, www);
+            }
         }
     }
 
@@ -1657,7 +1712,10 @@ sinner(function () {
                     index = el.innerText.indexOf('(') === -1 ? el.innerText.indexOf(':') : el.innerText.indexOf('(') - 1,
                     text = el.innerText.slice(0, index).trim(),
                     nick = Utils.String.compress(text, true, true, true),
-                    parent = el.parentElement.parentElement;
+                    parent = el.parentElement.parentElement,
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
                 if (config.hideUnregistered && !isRegistered) {
                     if (!parent.classList.contains('hiddenUser')) {
@@ -1673,14 +1731,10 @@ sinner(function () {
                     if (!parent.classList.contains('hiddenUser')) {
                         parent.classList.add('hiddenUser');
                     }
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    el.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                el.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
