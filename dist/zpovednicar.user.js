@@ -2,7 +2,7 @@
 // @name         Zpovědničář
 // @description  Doplňková funkcionalita stránek pro všechny smutné lidičky a pro ty, kdo jim chtějí pomoci
 // @license      http://www.wtfpl.net/about/
-// @version      1.3
+// @version      1.4
 // @author       Evžen Huml
 // @supportURL   https://www.zpovednice.eu/profil.php?kdo=71138
 // @homepageURL  https://www.zpovednicar.cz/
@@ -24,7 +24,7 @@
 // @require      https://cdn.zpovednicar.cz/userscripts/js/papaparse-5.0.2.min.js
 // @require      https://cdn.zpovednicar.cz/userscripts/js/FileSaver-2.0.4.min.js
 // @require      https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js
-// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-1.3.min.js
+// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-1.4.min.js
 // @run-at       document-start
 // @grant        GM_getResourceText
 // @grant        GM_addStyle
