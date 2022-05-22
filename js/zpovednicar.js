@@ -24,7 +24,7 @@ function sinner(callback) {
         });
     }
 }
-
+// TODO Utils.Dom.embedUserLinks refs #9
 sinner(function () {
     let db,
         page,
@@ -1365,7 +1365,11 @@ sinner(function () {
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
-                    .parentElement.parentElement.parentElement.parentElement;
+                    .parentElement.parentElement.parentElement.parentElement,
+                info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
 
             Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
@@ -1382,12 +1386,10 @@ sinner(function () {
                 if (!el.classList.contains('strikeUser')) {
                     el.classList.add('strikeUser');
                 }
-            } else if (!isQuotes) { // quotes are rendered without userinfo
-                let info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
-                    linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
+            }
 
+            // quotes header is rendered without userinfo (system account)
+            if (!isQuotes) {
                 info.prepend(linksEl);
                 Utils.Dom.embedUserLinks(linksEl, text);
             }
@@ -1401,9 +1403,12 @@ sinner(function () {
                     container1 = parent.parentElement.parentElement.parentElement.parentElement,
                     container2 = container1.previousElementSibling,
                     container3 = container2.previousElementSibling,
-                    containers = [container1, container2, container3];
+                    containers = [container1, container2, container3],
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
-                // quotes are rendered without userinfo
+                // all quote authors are rendered as unregistered
                 if (!isQuotes
                     && config.hideUnregistered
                     && !isRegistered
@@ -1425,14 +1430,10 @@ sinner(function () {
                             tr.classList.add('hiddenUser');
                         }
                     });
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    info.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                info.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
             });
         }
 
@@ -1542,7 +1543,10 @@ sinner(function () {
                 text = el.innerText.trim(),
                 info = document.querySelector('table.infoltext tbody').firstElementChild.firstElementChild,
                 nick = Utils.String.compress(text, true, true, true),
-                parent = el.parentElement;
+                parent = el.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                });
 
             Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
@@ -1559,22 +1563,21 @@ sinner(function () {
                 if (!el.classList.contains('strikeUser')) {
                     el.classList.add('strikeUser');
                 }
-            } else {
-                let linksEl = Object.assign(document.createElement('span'), {
-                    className: 'userLinks'
-                });
-
-                info.appendChild(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
-                linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
             }
+
+            info.appendChild(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, text);
+            linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
                 let isRegistered = el.innerText.indexOf('(') === -1,
                     index = isRegistered ? el.innerText.indexOf(':') : el.innerText.indexOf('(') - 1,
                     text = el.innerText.slice(0, index).trim(),
                     nick = Utils.String.compress(text, true, true, true),
-                    parent = el.parentElement.parentElement;
+                    parent = el.parentElement.parentElement,
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
                 if (config.hideUnregistered && !isRegistered) {
                     if (!parent.classList.contains('hiddenUser')) {
@@ -1590,14 +1593,10 @@ sinner(function () {
                     if (!parent.classList.contains('hiddenUser')) {
                         parent.classList.add('hiddenUser');
                     }
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    el.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                el.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
             });
         }
 
@@ -1657,7 +1656,10 @@ sinner(function () {
                     index = el.innerText.indexOf('(') === -1 ? el.innerText.indexOf(':') : el.innerText.indexOf('(') - 1,
                     text = el.innerText.slice(0, index).trim(),
                     nick = Utils.String.compress(text, true, true, true),
-                    parent = el.parentElement.parentElement;
+                    parent = el.parentElement.parentElement,
+                    linksEl = Object.assign(document.createElement('span'), {
+                        className: 'userLinks'
+                    });
 
                 if (config.hideUnregistered && !isRegistered) {
                     if (!parent.classList.contains('hiddenUser')) {
@@ -1673,14 +1675,10 @@ sinner(function () {
                     if (!parent.classList.contains('hiddenUser')) {
                         parent.classList.add('hiddenUser');
                     }
-                } else {
-                    let linksEl = Object.assign(document.createElement('span'), {
-                        className: 'userLinks'
-                    });
-
-                    el.prepend(linksEl);
-                    Utils.Dom.embedUserLinks(linksEl, text);
                 }
+
+                el.prepend(linksEl);
+                Utils.Dom.embedUserLinks(linksEl, text);
             });
         }
 
