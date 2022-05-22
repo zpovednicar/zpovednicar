@@ -400,11 +400,11 @@ sinner(function () {
                     let compressed = Utils.String.compress(nick, true, true, true);
 
                     if (config.useHiding) {
-                        Utils.Dom.embedHideUserLink(el, compressed, hide.includes(compressed));
+                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
                     }
 
                     if (config.useHighlighting) {
-                        Utils.Dom.embedHighlightUserLink(el, compressed, highlight.includes(compressed));
+                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
                     }
                 },
                 transformAnchorTargets: function () {
@@ -774,10 +774,10 @@ sinner(function () {
                 });
             },
             unhideUser: function (nick) {
-                //TODO
+//TODO implement Settings.unhideUser()
             },
             hideUser: function (nick) {
-//TODO it is compressed now and needs to find duplicates and optionally switch them
+//TODO nick is NOT compressed and needs to find compressed duplicates and switch them all
                 let record = {
                     subject: 'user',
                     highlight: 0,
@@ -787,10 +787,10 @@ sinner(function () {
                 db.idioms.add(record);
             },
             unhighlightUser: function (nick) {
-                //TODO
+//TODO implement Settings.unhighlightUser()
             },
             highlightUser: function (nick) {
-//TODO it is compressed now and needs to find duplicates and optionally switch them
+//TODO nick is NOT compressed and needs to find compressed duplicates and switch them all
                 let record = {
                     subject: 'user',
                     highlight: 1,
@@ -808,6 +808,10 @@ sinner(function () {
                     switch (change.type) {
                         case 1:
                             Settings.appendItem(change.obj);
+                            break;
+                        case 2:
+//TODO observe updates
+                            console.log('An object with key ' + change.key + ' was updated with modifications: ' + JSON.stringify(change.mods));
                             break;
                         case 3:
                             Settings.removeItem(change.oldObj);
