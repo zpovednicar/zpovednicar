@@ -24,7 +24,7 @@ function sinner(callback) {
         });
     }
 }
-// TODO Utils.Dom.embedUserLinks refs #9
+
 sinner(function () {
     let db,
         page,
@@ -330,14 +330,17 @@ sinner(function () {
                         Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
                     }
                 },
-                embedHighlightUserLink: function (el, nick) {
+                embedHighlightUserLink: function (el, nick, highlighted) {
+                    highlighted = highlighted || false;
+
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
                             title: Utils.i18n('highlightUser'),
                             className: 'highlightUserLink'
                         }),
+                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
                         linkContent = Object.assign(document.createElement('img'), {
-                            src: '/grafika/s3.gif',
+                            src: src,
                             width: 15,
                             height: 15,
                             border: 0,
@@ -349,20 +352,29 @@ sinner(function () {
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
-                        Settings.highlightUser(nick);
+
+                        if (highlighted) {
+                            Settings.unhighlightUser(nick);
+                        } else {
+                            Settings.highlightUser(nick);
+                        }
                     });
 
                     el.prepend(link);
                 },
-                embedHideUserLink: function (el, nick) {
+                embedHideUserLink: function (el, nick, hidden) {
+                    hidden = hidden || false;
+
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
                             title: Utils.i18n('hideUser'),
                             className: 'hideUserLink'
                         }),
+                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
+                        width = hidden ? 21 : 15,
                         linkContent = Object.assign(document.createElement('img'), {
-                            src: '/grafika/s8.gif',
-                            width: 15,
+                            src: src,
+                            width: width,
                             height: 15,
                             border: 0,
                             align: 'bottom',
@@ -373,19 +385,26 @@ sinner(function () {
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
-                        Settings.hideUser(nick);
+
+                        if (hidden) {
+                            Settings.unhideUser(nick);
+                        } else {
+                            Settings.hideUser(nick);
+                        }
                     });
 
                     el.prepend(link);
                     el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
-                embedUserLinks: function (el, nick) {
+                embedUserLinks: async function (el, nick, highlight, hide) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
                     if (config.useHiding) {
-                        Utils.Dom.embedHideUserLink(el, nick);
+                        Utils.Dom.embedHideUserLink(el, compressed, hide.includes(compressed));
                     }
 
                     if (config.useHighlighting) {
-                        Utils.Dom.embedHighlightUserLink(el, nick);
+                        Utils.Dom.embedHighlightUserLink(el, compressed, highlight.includes(compressed));
                     }
                 },
                 transformAnchorTargets: function () {
@@ -584,7 +603,10 @@ sinner(function () {
                             results.push(compress ? Utils.String.compress(item.content, true, true, true) : item.content);
                         });
 
-                        return results;
+                        // distinct values only
+                        return results.filter(function (value, index, self) {
+                            return self.indexOf(value) === index;
+                        });
                     });
                 }
             }
@@ -751,7 +773,11 @@ sinner(function () {
                     console.error(err);
                 });
             },
+            unhideUser: function (nick) {
+                //TODO
+            },
             hideUser: function (nick) {
+//TODO it is compressed now and needs to find duplicates and optionally switch them
                 let record = {
                     subject: 'user',
                     highlight: 0,
@@ -760,7 +786,11 @@ sinner(function () {
 
                 db.idioms.add(record);
             },
+            unhighlightUser: function (nick) {
+                //TODO
+            },
             highlightUser: function (nick) {
+//TODO it is compressed now and needs to find duplicates and optionally switch them
                 let record = {
                     subject: 'user',
                     highlight: 1,
@@ -1391,7 +1421,7 @@ sinner(function () {
             // quotes header is rendered without userinfo (system account)
             if (!isQuotes) {
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1433,7 +1463,7 @@ sinner(function () {
                 }
 
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
@@ -1566,7 +1596,7 @@ sinner(function () {
             }
 
             info.appendChild(linksEl);
-            Utils.Dom.embedUserLinks(linksEl, text);
+            Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
@@ -1596,7 +1626,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
@@ -1678,7 +1708,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             });
         }
 
