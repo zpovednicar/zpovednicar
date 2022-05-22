@@ -1629,8 +1629,12 @@ sinner(function () {
 
         processAvatars() {
             let info = document.querySelector('table.infoltext tbody'),
-                www = info.children[info.children.length - 5].innerText.trim().slice(13).trim(),
+                wwwContainer = info.children[info.children.length - 5],
+                www = wwwContainer.innerText.trim().slice(13).trim(),
                 container = document.querySelector('td.photo');
+
+            // Fixes ugly design effect of long URL in the table cell refs #13
+            wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
 
             Utils.Dom.replaceAvatar(container, www);
         }
