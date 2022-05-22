@@ -80,7 +80,9 @@ sinner(function () {
                 thumbnailsNone: '-- žádné --',
                 helpLabel: 'Nápovědu najdete na',
                 hideUser: 'Skrývat přezdívku',
-                highlightUser: 'Zvýrazňovat přezdívku'
+                unhideUser: 'Přestat skrývat přezdívku',
+                highlightUser: 'Zvýrazňovat přezdívku',
+                unhighlightUser: 'Přestat zvýrazňovat přezdívku'
             },
             sk: {
                 yes: 'Áno',
@@ -130,7 +132,9 @@ sinner(function () {
                 thumbnailsNone: '-- žiadne --',
                 helpLabel: 'Nápovedu nájdete na',
                 hideUser: 'Skrývať prezývku',
-                highlightUser: 'Zvýrazňovať prezývku'
+                unhideUser: 'Prestať skrývať prezývku',
+                highlightUser: 'Zvýrazňovať prezývku',
+                unhighlightUser: 'Prestať zvýrazňovať prezývku'
             }
         },
         config = {
@@ -335,7 +339,7 @@ sinner(function () {
 
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: Utils.i18n('highlightUser'),
+                            title: highlighted ? Utils.i18n('unhighlightUser') : Utils.i18n('highlightUser'),
                             className: 'highlightUserLink'
                         }),
                         src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
@@ -354,9 +358,9 @@ sinner(function () {
                         e.target.parentElement.parentElement.remove();
 
                         if (highlighted) {
-                            Settings.unhighlightUser(nick);
+                            Utils.Db.removeUser(nick, 1);
                         } else {
-                            Settings.highlightUser(nick);
+                            Utils.Db.addOrToggleUser(nick, 1);
                         }
                     });
 
@@ -367,7 +371,7 @@ sinner(function () {
 
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: Utils.i18n('hideUser'),
+                            title: hidden ? Utils.i18n('unhideUser') : Utils.i18n('hideUser'),
                             className: 'hideUserLink'
                         }),
                         src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
@@ -387,9 +391,9 @@ sinner(function () {
                         e.target.parentElement.parentElement.remove();
 
                         if (hidden) {
-                            Settings.unhideUser(nick);
+                            Utils.Db.removeUser(nick, 0);
                         } else {
-                            Settings.hideUser(nick);
+                            Utils.Db.addOrToggleUser(nick, 0);
                         }
                     });
 
@@ -421,23 +425,6 @@ sinner(function () {
                     }
                 },
                 replaceAvatar: function (container, src) {
-                    if (!config.transformAvatars) {
-                        let avatar = document.querySelector('img.avatar');
-
-                        if (avatar !== null) {
-                            let container = avatar.parentElement.parentElement,
-                                photo = container.querySelector('img.transformedAvatar');
-
-                            avatar.parentElement.remove();
-
-                            if (photo !== null) {
-                                photo.classList.remove('transformedAvatar');
-                            }
-                        }
-
-                        return;
-                    }
-
                     if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
                         return;
                     }
@@ -589,6 +576,51 @@ sinner(function () {
 
                     return database;
                 },
+                deleteIdiom: function (item) {
+                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
+                    }).catch(function (err) {
+                        console.error(err);
+                    });
+                },
+                removeUser: function (nick, highlight) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return rec.highlight === highlight && compressed === content;
+                    }).toArray(function (arr) {
+                        arr.forEach(function (item) {
+                            Utils.Db.deleteIdiom(item);
+                        });
+                    });
+                },
+                addOrToggleUser: function (nick, highlight) {
+                    let record = {
+                            subject: 'user',
+                            highlight: highlight,
+                            content: nick.trim()
+                        },
+                        compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return compressed === content;
+                    }).toArray(function (arr) {
+                        if (arr.length === 0) {
+                            return db.idioms.add(record);
+                        }
+
+                        arr.forEach(function (item) {
+                            db.idioms.update(item.uuid, {highlight: highlight});
+                        });
+                    });
+                },
                 getIdioms: function (subject, highlight, compress) {
                     highlight = highlight || false;
                     compress = compress || false;
@@ -618,12 +650,6 @@ sinner(function () {
             getCaptionByItem: function (item) {
                 return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
             },
-            deleteRecord: function (item) {
-                db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
             appendItem: function (item) {
                 let li = Object.assign(document.createElement('li'), {id: 'settingsModal-' + item.uuid}),
                     a = Object.assign(document.createElement('a'), {href: '#'}),
@@ -644,7 +670,7 @@ sinner(function () {
 
                     DayPilot.Modal.confirm(question, options).then(function (args) {
                         if (args.result === 'OK') {
-                            Settings.deleteRecord(item);
+                            Utils.Db.deleteIdiom(item);
                         }
                     });
                 });
@@ -773,32 +799,6 @@ sinner(function () {
                     console.error(err);
                 });
             },
-            unhideUser: function (nick) {
-//TODO implement Settings.unhideUser()
-            },
-            hideUser: function (nick) {
-//TODO nick is NOT compressed and needs to find compressed duplicates and switch them all
-                let record = {
-                    subject: 'user',
-                    highlight: 0,
-                    content: nick.trim()
-                };
-
-                db.idioms.add(record);
-            },
-            unhighlightUser: function (nick) {
-//TODO implement Settings.unhighlightUser()
-            },
-            highlightUser: function (nick) {
-//TODO nick is NOT compressed and needs to find compressed duplicates and switch them all
-                let record = {
-                    subject: 'user',
-                    highlight: 1,
-                    content: nick.trim()
-                };
-
-                db.idioms.add(record);
-            },
             observableListener: function (changes) {
                 changes.forEach(function (change) {
                     if (change.table !== 'idioms') {
@@ -810,8 +810,16 @@ sinner(function () {
                             Settings.appendItem(change.obj);
                             break;
                         case 2:
-//TODO observe updates
-                            console.log('An object with key ' + change.key + ' was updated with modifications: ' + JSON.stringify(change.mods));
+                            if (typeof change.mods.highlight === 'undefined') {
+                                return;
+                            }
+
+                            let append = Object.assign(change.obj, {
+                                highlight: change.mods.highlight
+                            });
+
+                            Settings.removeItem(change.obj);
+                            Settings.appendItem(append);
                             break;
                         case 3:
                             Settings.removeItem(change.oldObj);
@@ -1664,12 +1672,26 @@ sinner(function () {
             let info = document.querySelector('table.infoltext tbody'),
                 wwwContainer = info.children[info.children.length - 5],
                 www = wwwContainer.innerText.trim().slice(13).trim(),
-                container = document.querySelector('td.photo');
+                container = document.querySelector('td.photo'),
+                avatar = document.querySelector('img.avatar');
 
             // Fixes ugly design effect of long URL in the table cell refs #13
             wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
 
-            Utils.Dom.replaceAvatar(container, www);
+            if (avatar !== null) {
+                let avatarContainer = avatar.parentElement.parentElement,
+                    photo = avatarContainer.querySelector('img.transformedAvatar');
+
+                avatar.parentElement.remove();
+
+                if (photo !== null) {
+                    photo.classList.remove('transformedAvatar');
+                }
+            }
+
+            if (config.transformAvatars) {
+                Utils.Dom.replaceAvatar(container, www);
+            }
         }
     }
 
