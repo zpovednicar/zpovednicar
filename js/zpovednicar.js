@@ -4,7 +4,7 @@ for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS
     GM_addStyle(GM_getResourceText(resource));
 }
 
-const style = (function () {
+const sinnerStyle = (function () {
     let el = document.createElement('style');
 
     el.appendChild(document.createTextNode(''));
@@ -28,116 +28,18 @@ function sinner(callback) {
 sinner(function () {
     let db,
         page,
-        settingsModal;
+        settingsModal,
+        gettext = (function () {
+            let gettext = i18n(),
+                lang = window.location.hostname.match(/^(www\.)?spovednica\.sk$/) ? 'sk' : 'cz';
 
-    const i18n = {
-            language: window.location.hostname.match(/^(www\.)?spovednica\.sk$/) ? 'sk' : 'cz',
-            cz: {
-                yes: 'Ano',
-                no: 'Ne',
-                ok: 'Rozumím',
-                menuLabel: 'ZPOVĚDNIČÁŘ',
-                enable: 'zapnout',
-                disable: 'vypnout',
-                comingSoon: 'už brzy',
-                domainsNone: '-- nepoužívat --',
-                questionHighlightUser: 'Opravdu smazat zvýrazněného uživatele?',
-                questionHideUser: 'Opravdu smazat skrývaného uživatele?',
-                questionHighlightWord: 'Opravdu smazat zvýrazněný výraz?',
-                questionHideWord: 'Opravdu smazat skrývaný výraz?',
-                settingsSubmit: 'Uložit',
-                settingsSend: 'Odeslat',
-                settingsCancel: 'Zrušit',
-                settingsUser: 'přezdívka',
-                settingsWord: 'výraz',
-                settingsClose: 'Zavřít',
-                settingsHighlight: 'Zvýrazňovat',
-                settingsHide: 'Skrývat',
-                settingsLabel: 'Nastavení',
-                settingsUsers: 'Přezdívky',
-                settingsWords: 'Výrazy',
-                settingsNone: 'žádné',
-                settingsColor: 'Barva zvýraznění',
-                settingsDomain: 'Vynutit doménu',
-                settingsHideDeleted: 'Skrývat smazané',
-                settingsHideUnregistered: 'Skrývat neregistrované',
-                settingsTransformAnchors: 'Odkazy otevřít ve stejném okně',
-                settingsTransformAvatars: 'Nahrazovat obrázek v profilu',
-                settingsYoutubeThumbnails: 'Náhledy Youtube videí',
-                idiomContentLength: 'Minimální délka jsou [length] znaky',
-                idiomContentExists: 'Záznam existuje ve [highlight], obojí najednou není možné',
-                idiomContentHighlighted: 'zvýrazňovaných',
-                idiomContentHidden: 'skrývaných',
-                fileSaverUnsupported: 'Nepodporováno vaším prohlížečem',
-                settingsBackups: 'Zálohování',
-                settingsBackup: 'Zálohovat',
-                settingsBackupEmpty: 'Databáze je prázdná, není co zálohovat',
-                settingsBackupPassword: 'Heslo pro soubor se zálohou',
-                settingsBackupSuccess: 'Záloha proběhla úspěšně, stahuje se soubor:<br><br>[filename]',
-                settingsRestore: 'Obnovit',
-                settingsRestoreError: 'Neplatné heslo nebo poškozený soubor se zálohou',
-                settingsRestoreSuccess: 'Obnova ze zálohy proběhla úspěšně',
-                thumbnailsNone: '-- žádné --',
-                helpLabel: 'Nápovědu najdete na',
-                hideUser: 'Skrývat přezdívku',
-                unhideUser: 'Přestat skrývat přezdívku',
-                highlightUser: 'Zvýrazňovat přezdívku',
-                unhighlightUser: 'Přestat zvýrazňovat přezdívku'
-            },
-            sk: {
-                yes: 'Áno',
-                no: 'Nie',
-                ok: 'Rozumiem',
-                menuLabel: 'SPOVEDNIČIAR',
-                enable: 'zapnúť',
-                disable: 'vypnúť',
-                comingSoon: 'už čoskoro',
-                domainsNone: '-- nepoužívať --',
-                questionHighlightUser: 'Naozaj zmazať zvýrazneného užívateľa?',
-                questionHideUser: 'Naozaj zmazať skrývaného užívateľa?',
-                questionHighlightWord: 'Naozaj zmazať zvýraznený výraz?',
-                questionHideWord: 'Naozaj zmazať skrývaný výraz?',
-                settingsSubmit: 'Uložiť',
-                settingsSend: 'Odoslať',
-                settingsCancel: 'Zrušiť',
-                settingsUser: 'prezývka',
-                settingsWord: 'výraz',
-                settingsClose: 'Zavrieť',
-                settingsHighlight: 'Zvýrazňovať',
-                settingsHide: 'Skrývať',
-                settingsLabel: 'Nastavenia',
-                settingsUsers: 'Prezývky',
-                settingsWords: 'Výrazy',
-                settingsNone: 'žiadne',
-                settingsColor: 'Farba zvýraznenia',
-                settingsDomain: 'Vynútiť doménu',
-                settingsHideDeleted: 'Skrývať zmazané',
-                settingsHideUnregistered: 'Skrývať neregistrované',
-                settingsTransformAnchors: 'Odkazy otvoriť v rovnakom okne',
-                settingsTransformAvatars: 'Nahradzovať obrázok v profile',
-                settingsYoutubeThumbnails: 'Náhľady Youtube videí',
-                idiomContentLength: 'Minimálna dĺžka sú [length] znaky',
-                idiomContentExists: 'Záznam existuje vo [highlight], oboje naraz nie je možné',
-                idiomContentHighlighted: 'zvýrazňovaných',
-                idiomContentHidden: 'skrývaných',
-                fileSaverUnsupported: 'Nepodporované vašim prehliadačom',
-                settingsBackups: 'Zálohovanie',
-                settingsBackup: 'Zálohovať',
-                settingsBackupEmpty: 'Databáza je prázdna, nie je čo zálohovať',
-                settingsBackupPassword: 'Heslo pre súbor so zálohou',
-                settingsBackupSuccess: 'Záloha prebehla úspešne, sťahuje sa súbor:<br><br>[filename]',
-                settingsRestore: 'Obnoviť',
-                settingsRestoreError: 'Neplatné heslo alebo poškodený súbor so zálohou',
-                settingsRestoreSuccess: 'Obnova zo zálohy prebehla úspešne',
-                thumbnailsNone: '-- žiadne --',
-                helpLabel: 'Nápovedu nájdete na',
-                hideUser: 'Skrývať prezývku',
-                unhideUser: 'Prestať skrývať prezývku',
-                highlightUser: 'Zvýrazňovať prezývku',
-                unhighlightUser: 'Prestať zvýrazňovať prezývku'
-            }
-        },
-        config = {
+            gettext.loadJSON(sinnerI18n[lang], 'messages');
+            gettext.setLocale(lang);
+
+            return gettext;
+        })();
+
+    const config = {
             color: GM_getValue('sinner.highlightColor', '#ff0000'),
             domain: GM_getValue('sinner.enforceDomain', '.'),
             youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
@@ -148,14 +50,14 @@ sinner(function () {
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
             transformAvatars: GM_getValue('sinner.transformAvatars', false),
             domains: new Map([
-                ['.', i18n[i18n.language].domainsNone],
+                ['.', gettext.__('-- do not use --')],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
             youtubeThumbnails: new Map([
                 [0, {
-                    label: i18n[i18n.language].thumbnailsNone
+                    label: gettext.__('-- none --')
                 }],
                 [1, {
                     label: '3 ks (60 x 45)',
@@ -187,11 +89,11 @@ sinner(function () {
                 }]
             ]),
             questions: new Map([
-                ['ul#highlightUser', i18n[i18n.language].questionHighlightUser],
-                ['ul#hideUser', i18n[i18n.language].questionHideUser],
-                ['ul#highlightWord', i18n[i18n.language].questionHighlightWord],
-                ['ul#hideWord', i18n[i18n.language].questionHideWord]
-            ]),
+                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
+                ['ul#hideUser', gettext.__('Really delete hidden user?')],
+                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
+                ['ul#hideWord', gettext.__('Really delete hidden term?')]
+            ])
         },
         cssRules = new Map([
             ['homeHighlightUser', {
@@ -228,23 +130,20 @@ sinner(function () {
             }]
         ]),
         Utils = {
-            i18n: function (key) {
-                return i18n[i18n.language][key] || 'Missing ' + i18n.language + ' translation for key ' + key;
-            },
             Css: {
                 initializeStylesheet: function () {
                     cssRules.forEach(function (rule, key) {
-                        let index = style.sheet.insertRule(rule.selector + ' {}', rule.index);
+                        let index = sinnerStyle.sheet.insertRule(rule.selector + ' {}', rule.index);
 
                         rule.style.forEach(function (value, key) {
-                            style.sheet.cssRules[index].style[key] = value;
+                            sinnerStyle.sheet.cssRules[index].style[key] = value;
                         });
                     });
                 },
                 setStyle: function (name, key, value) {
                     let rule = cssRules.get(name);
 
-                    style.sheet.cssRules[rule.index].style[key] = value;
+                    sinnerStyle.sheet.cssRules[rule.index].style[key] = value;
                 },
                 removeClass: function (classNames) {
                     classNames = typeof classNames === 'string' ? [classNames] : classNames;
@@ -339,7 +238,7 @@ sinner(function () {
 
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: highlighted ? Utils.i18n('unhighlightUser') : Utils.i18n('highlightUser'),
+                            title: highlighted ? gettext.__('Stop highlighting nick') : gettext.__('Highlight nick'),
                             className: 'highlightUserLink'
                         }),
                         src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
@@ -349,7 +248,7 @@ sinner(function () {
                             height: 15,
                             border: 0,
                             align: 'bottom',
-                            alt: Utils.i18n('highlightUser')
+                            alt: gettext.__('Highlight nick')
                         });
 
                     link.appendChild(linkContent);
@@ -371,7 +270,7 @@ sinner(function () {
 
                     let link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: hidden ? Utils.i18n('unhideUser') : Utils.i18n('hideUser'),
+                            title: hidden ? gettext.__('Stop hiding nick') : gettext.__('Hide nick'),
                             className: 'hideUserLink'
                         }),
                         src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
@@ -382,7 +281,7 @@ sinner(function () {
                             height: 15,
                             border: 0,
                             align: 'bottom',
-                            alt: Utils.i18n('hideUser')
+                            alt: gettext.__('Hide nick')
                         });
 
                     link.appendChild(linkContent);
@@ -663,8 +562,8 @@ sinner(function () {
                     e.preventDefault();
 
                     let options = {
-                        okText: Utils.i18n('yes'),
-                        cancelText: Utils.i18n('no'),
+                        okText: gettext.__('Yes'),
+                        cancelText: gettext.__('No'),
                         container: document.querySelector('div.tingle-modal-box__content')
                     };
 
@@ -767,12 +666,13 @@ sinner(function () {
                         content: data.get('content').trim()
                     },
                     alertOptions = {
-                        okText: Utils.i18n('ok'),
+                        okText: gettext.__('OK'),
                         container: document.querySelector('div.tingle-modal-box__content')
-                    };
+                    },
+                    minLength = 3;
 
-                if (record.content.length < 3) {
-                    let msg = Utils.i18n('idiomContentLength').replace('[length]', 3);
+                if (record.content.length < minLength) {
+                    let msg = gettext._n('Minimal length is %1 character', 'Minimal length is %1 characters', minLength);
 
                     DayPilot.Modal.alert(msg, alertOptions);
 
@@ -785,8 +685,8 @@ sinner(function () {
                     return rec.subject === record.subject;
                 }).count().then(function (cnt) {
                     if (cnt > 0) {
-                        let highlight = record.highlight === 1 ? Utils.i18n('idiomContentHidden') : Utils.i18n('idiomContentHighlighted'),
-                            msg = Utils.i18n('idiomContentExists').replace('[highlight]', highlight);
+                        let highlight = record.highlight === 1 ? gettext.__('hidden ones') : gettext.__('highlighted ones'),
+                            msg = gettext.__('Record exists in %1, it is impossible to save it in both', highlight);
 
                         DayPilot.Modal.alert(msg, alertOptions);
 
@@ -829,21 +729,21 @@ sinner(function () {
             },
             backup: function () {
                 let promptOptions = {
-                    okText: Utils.i18n('settingsSend'),
-                    cancelText: Utils.i18n('settingsCancel'),
+                    okText: gettext.__('Send'),
+                    cancelText: gettext.__('Cancel'),
                     container: document.querySelector('div.tingle-modal-box__content')
                 };
 
                 db.idioms.toArray(function (data) {
-                    promptOptions.okText = Utils.i18n('ok');
+                    promptOptions.okText = gettext.__('OK');
 
                     if (data.length === 0) {
-                        DayPilot.Modal.alert(Utils.i18n('settingsBackupEmpty'), promptOptions);
+                        DayPilot.Modal.alert(gettext.__('Database is empty, there is nothing to backup'), promptOptions);
 
                         return;
                     }
 
-                    DayPilot.Modal.prompt(Utils.i18n('settingsBackupPassword'), promptOptions).then(function (args) {
+                    DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
                         if (typeof args.result === 'undefined' || args.result.length === 0) {
                             return;
                         }
@@ -856,7 +756,7 @@ sinner(function () {
                             filename = 'zpovednicar-' + (new Date()).toISOString() + '.data';
 
                         window.saveAs(blob, filename);
-                        DayPilot.Modal.alert(Utils.i18n('settingsBackupSuccess').replace('[filename]', filename), promptOptions);
+                        DayPilot.Modal.alert(gettext.__('Successful backup, downloading file %1%2', '<br><br>', filename), promptOptions);
                     });
                 }).catch(function (err) {
                     console.error(err);
@@ -864,8 +764,8 @@ sinner(function () {
             },
             restore: function () {
                 let promptOptions = {
-                        okText: Utils.i18n('settingsSend'),
-                        cancelText: Utils.i18n('settingsCancel'),
+                        okText: gettext.__('Send'),
+                        cancelText: gettext.__('Cancel'),
                         container: document.querySelector('div.tingle-modal-box__content')
                     },
                     input = Object.assign(document.createElement('input'), {
@@ -881,7 +781,7 @@ sinner(function () {
                     reader.onload = function (eRead) {
                         let raw = eRead.target.result;
 
-                        DayPilot.Modal.prompt(Utils.i18n('settingsBackupPassword'), promptOptions).then(function (args) {
+                        DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
                             if (typeof args.result === 'undefined' || args.result.length === 0) {
                                 return;
                             }
@@ -892,14 +792,14 @@ sinner(function () {
                                     dynamicTyping: true
                                 });
 
-                            promptOptions.okText = Utils.i18n('ok');
+                            promptOptions.okText = gettext.__('OK');
 
                             if (data.errors.length > 0) {
-                                DayPilot.Modal.alert(Utils.i18n('settingsRestoreError'), promptOptions);
+                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
                             } else {
                                 db.idioms.clear().then(function () {
                                     db.idioms.bulkPut(data.data).then(function (lastKey) {
-                                        DayPilot.Modal.alert(Utils.i18n('settingsRestoreSuccess'), promptOptions);
+                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
                                     }).catch(Dexie.BulkError, function (err) {
                                         console.error(err);
                                     });
@@ -929,7 +829,7 @@ sinner(function () {
                     }),
                     submit = Object.assign(document.createElement('input'), {
                         type: 'submit',
-                        value: Utils.i18n('settingsHighlight'),
+                        value: gettext.__('Highlight'),
                         id: 'sinnerInputSubmit'
                     }),
                     form = Object.assign(document.createElement('form'), {id: 'sinnerDataForm'}),
@@ -944,12 +844,12 @@ sinner(function () {
 
                 select.appendChild(Object.assign(document.createElement('option'), {
                     value: 'user',
-                    text: Utils.i18n('settingsUser')
+                    text: gettext.__('nick')
                 }));
                 select.appendChild(Object.assign(document.createElement('option'), {
                     value: 'word',
                     selected: 'selected',
-                    text: Utils.i18n('settingsWord')
+                    text: gettext.__('term')
                 }));
 
                 form.appendChild(type);
@@ -966,7 +866,7 @@ sinner(function () {
                 settingsModal = new tingle.modal({
                     footer: true,
                     closeMethods: ['overlay', 'button', 'escape'],
-                    closeLabel: Utils.i18n('settingsClose'),
+                    closeLabel: gettext.__('Close'),
                     cssClass: ['custom-class-1', 'custom-class-2'],
                     beforeOpen: function () {
                         Utils.Dom.removeAllChildNodes(document.querySelector('ul#highlightUser'));
@@ -994,24 +894,24 @@ sinner(function () {
 
                 let modalContent =
                     '<ul data-tabs>' +
-                    '<li><a data-tabby-default href="#tabHighlight">' + Utils.i18n('settingsHighlight') + '</a></li>' +
-                    '<li><a href="#tabHide">' + Utils.i18n('settingsHide') + '</a></li>' +
-                    '<li><a href="#tabSettings">' + Utils.i18n('settingsLabel') + '</a></li>' +
+                    '<li><a data-tabby-default href="#tabHighlight">' + gettext.__('Highlight') + '</a></li>' +
+                    '<li><a href="#tabHide">' + gettext.__('Hide') + '</a></li>' +
+                    '<li><a href="#tabSettings">' + gettext.__('Settings') + '</a></li>' +
                     '</ul>' +
                     '<div id="tabHighlight">' +
                     '<p>' +
                     '<input type="radio" name="useHighlighting" id="highlightingYes"' + (config.useHighlighting ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="highlightingYes">' + Utils.i18n('enable') + '</label>&nbsp;' +
+                    '<label for="highlightingYes">' + gettext.__('enable') + '</label>&nbsp;' +
                     '<input type="radio" name="useHighlighting" id="highlightingNo"' + (config.useHighlighting ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="highlightingNo">' + Utils.i18n('disable') + '</label>' +
+                    '<label for="highlightingNo">' + gettext.__('disable') + '</label>' +
                     '</p>' +
                     '<div class="row">' +
                     '<div class="column">' +
-                    '<strong>' + Utils.i18n('settingsUsers') + ':</strong>&nbsp;<span id="highlightUserNone">(' + Utils.i18n('settingsNone') + ')</span>' +
+                    '<strong>' + gettext.__('Nicks') + ':</strong>&nbsp;<span id="highlightUserNone">(' + gettext.__('none') + ')</span>' +
                     '<ul id="highlightUser" class="sinnerList"></ul>' +
                     '</div>' +
                     '<div class="column">' +
-                    '<strong>' + Utils.i18n('settingsWords') + ':</strong>&nbsp;<span id="highlightWordNone">(' + Utils.i18n('settingsNone') + ')</span>' +
+                    '<strong>' + gettext.__('Terms') + ':</strong>&nbsp;<span id="highlightWordNone">(' + gettext.__('none') + ')</span>' +
                     '<ul id="highlightWord" class="sinnerList"></ul>' +
                     '</div>' +
                     '</div>' +
@@ -1019,17 +919,17 @@ sinner(function () {
                     '<div id="tabHide">' +
                     '<p>' +
                     '<input type="radio" name="useHiding" id="hidingYes"' + (config.useHiding ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="hidingYes">' + Utils.i18n('enable') + '</label>&nbsp;' +
+                    '<label for="hidingYes">' + gettext.__('enable') + '</label>&nbsp;' +
                     '<input type="radio" name="useHiding" id="hidingNo"' + (config.useHiding ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="hidingNo">' + Utils.i18n('disable') + '</label>' +
+                    '<label for="hidingNo">' + gettext.__('disable') + '</label>' +
                     '</p>' +
                     '<div class="row">' +
                     '<div class="column">' +
-                    '<strong>' + Utils.i18n('settingsUsers') + ':</strong>&nbsp;<span id="hideUserNone">(' + Utils.i18n('settingsNone') + ')</span>' +
+                    '<strong>' + gettext.__('Nicks') + ':</strong>&nbsp;<span id="hideUserNone">(' + gettext.__('none') + ')</span>' +
                     '<ul id="hideUser" class="sinnerList"></ul>' +
                     '</div>' +
                     '<div class="column">' +
-                    '<strong>' + Utils.i18n('settingsWords') + ':</strong>&nbsp;<span id="hideWordNone">(' + Utils.i18n('settingsNone') + ')</span>' +
+                    '<strong>' + gettext.__('Terms') + ':</strong>&nbsp;<span id="hideWordNone">(' + gettext.__('none') + ')</span>' +
                     '<ul id="hideWord" class="sinnerList"></ul>' +
                     '</div>' +
                     '</div>' +
@@ -1038,7 +938,7 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('helpLabel') +
+                    gettext.__('Help is available at') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
@@ -1049,61 +949,61 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    Utils.i18n('settingsHideDeleted') +
+                    gettext.__('Hide deleted') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<input type="radio" name="hideDeleted" id="hideDeletedYes"' + (config.hideDeleted ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="hideDeletedYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<label for="hideDeletedYes">' + gettext.__('Yes') + '</label>&nbsp;' +
                     '<input type="radio" name="hideDeleted" id="hideDeletedNo"' + (config.hideDeleted ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="hideDeletedNo">' + Utils.i18n('no') + '</label>' +
+                    '<label for="hideDeletedNo">' + gettext.__('No') + '</label>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsHideUnregistered') +
+                    gettext.__('Hide unregistered') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>' +
                     '<input type="radio" name="hideUnregistered" id="hideUnregisteredYes"' + (config.hideUnregistered ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="hideUnregisteredYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<label for="hideUnregisteredYes">' + gettext.__('Yes') + '</label>&nbsp;' +
                     '<input type="radio" name="hideUnregistered" id="hideUnregisteredNo"' + (config.hideUnregistered ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="hideUnregisteredNo">' + Utils.i18n('no') + '</label>' +
+                    '<label for="hideUnregisteredNo">' + gettext.__('No') + '</label>' +
                     '</p>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    Utils.i18n('settingsTransformAnchors') +
+                    gettext.__('Open links in the same window') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<input type="radio" name="transformAnchors" id="transformAnchorsYes"' + (config.transformAnchors ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="transformAnchorsYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<label for="transformAnchorsYes">' + gettext.__('Yes') + '</label>&nbsp;' +
                     '<input type="radio" name="transformAnchors" id="transformAnchorsNo"' + (config.transformAnchors ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="transformAnchorsNo">' + Utils.i18n('no') + '</label>' +
+                    '<label for="transformAnchorsNo">' + gettext.__('No') + '</label>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsTransformAvatars') +
+                    gettext.__('Replace profile picture') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>' +
                     '<input type="radio" name="transformAvatars" id="transformAvatarsYes"' + (config.transformAvatars ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="transformAvatarsYes">' + Utils.i18n('yes') + '</label>&nbsp;' +
+                    '<label for="transformAvatarsYes">' + gettext.__('Yes') + '</label>&nbsp;' +
                     '<input type="radio" name="transformAvatars" id="transformAvatarsNo"' + (config.transformAvatars ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="transformAvatarsNo">' + Utils.i18n('no') + '</label>' +
+                    '<label for="transformAvatarsNo">' + gettext.__('No') + '</label>' +
                     '</p>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    Utils.i18n('settingsYoutubeThumbnails') +
+                    gettext.__('Thumbnails of Youtube videos') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
@@ -1118,7 +1018,7 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsDomain') +
+                    gettext.__('Enforce domain') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
@@ -1134,7 +1034,7 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    Utils.i18n('settingsColor') +
+                    gettext.__('Color for highlighting') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
@@ -1144,18 +1044,18 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    Utils.i18n('settingsBackups') +
+                    gettext.__('Database backup') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>';
                 if (isFileSaverSupported) {
                     modalContent +=
-                        '<button id="settingsBackup">' + Utils.i18n('settingsBackup') + '</button>' +
+                        '<button id="settingsBackup">' + gettext.__('Backup') + '</button>' +
                         '&nbsp;' +
-                        '<button id="settingsRestore">' + Utils.i18n('settingsRestore') + '</button>';
+                        '<button id="settingsRestore">' + gettext.__('Restore') + '</button>';
                 } else {
-                    modalContent += Utils.i18n('fileSaverUnsupported');
+                    modalContent += gettext.__('Not supported by your browser');
                 }
                 modalContent +=
                     '</p>' +
@@ -1209,12 +1109,12 @@ sinner(function () {
                     switch (e.target.hash.substr(1)) {
                         case 'tabHighlight':
                             type.value = 1;
-                            submit.value = Utils.i18n('settingsHighlight');
+                            submit.value = gettext.__('Highlight');
                             footer.style.display = 'block';
                             break;
                         case 'tabHide':
                             type.value = 0;
-                            submit.value = Utils.i18n('settingsHide');
+                            submit.value = gettext.__('Hide');
                             footer.style.display = 'block';
                             break;
                         default:
@@ -1330,7 +1230,7 @@ sinner(function () {
                     .querySelector('div.boxchk'),
                 br = document.createElement('br'),
                 a = Object.assign(document.createElement('a'), {href: '#'}),
-                text = document.createTextNode(Utils.i18n('menuLabel')),
+                text = document.createTextNode(gettext.__('SINNER')),
                 img = Object.assign(document.createElement('img'), {
                     src: 'grafika/flarr.gif',
                     width: 13,
@@ -1885,7 +1785,7 @@ sinner(function () {
 
     Utils.Css.initializeStylesheet();
 
-    GM_registerMenuCommand(Utils.i18n('settingsLabel'), page.modal);
+    GM_registerMenuCommand(gettext.__('Settings'), page.modal);
 
     page.process();
 });
