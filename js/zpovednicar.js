@@ -1353,6 +1353,14 @@ sinner(function () {
     }
 
     class PostPage extends Page {
+        async process() {
+            if (document.querySelector('.infoctext')) {
+                return;
+            }
+
+            super.process();
+        }
+
         async processDeleted() {
             if (!config.hideDeleted) {
                 return;
