@@ -131,18 +131,6 @@ sinner(function () {
         ]),
         Events = {
             Config: {
-                highlightColorChangeListener: function (key, old_value, new_value, remote) {
-                    config.color = new_value;
-
-                    Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
-                    Utils.Css.setStyle('postHighlightUser', 'color', new_value);
-                    Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
-                    Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
-
-                    if (typeof settingsModal !== 'undefined' && remote) {
-                        document.getElementById('colorPicker').value = config.color;
-                    }
-                },
                 enforceDomainChangeListener: function (key, old_value, new_value, remote) {
                     Settings.enforceDomain(new_value);
                 },
@@ -155,6 +143,18 @@ sinner(function () {
                     config.hideUnregistered = new_value;
                     page.resetNicks();
                     page.processNicks();
+                },
+                highlightColorChangeListener: function (key, old_value, new_value, remote) {
+                    config.color = new_value;
+
+                    Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('postHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
+
+                    if (typeof settingsModal !== 'undefined' && remote) {
+                        document.getElementById('colorPicker').value = config.color;
+                    }
                 },
                 transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
                     config.transformAnchors = new_value;
@@ -254,11 +254,6 @@ sinner(function () {
                         });
                     });
                 },
-                setStyle: function (name, key, value) {
-                    let rule = cssRules.get(name);
-
-                    sinnerStyle.sheet.cssRules[rule.index].style[key] = value;
-                },
                 removeClass: function (classNames) {
                     classNames = typeof classNames === 'string' ? [classNames] : classNames;
 
@@ -267,19 +262,106 @@ sinner(function () {
                             el.classList.remove(className);
                         });
                     });
+                },
+                setStyle: function (name, key, value) {
+                    let rule = cssRules.get(name);
+
+                    sinnerStyle.sheet.cssRules[rule.index].style[key] = value;
                 }
             },
             Dom: {
-                removeAllChildNodes: function (parent) {
-                    while (parent.firstChild) {
-                        parent.removeChild(parent.firstChild);
+                embedHideUserLink: function (el, nick, hidden) {
+                    hidden = hidden || false;
+
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: hidden ? gettext.__('Stop hiding nick') : gettext.__('Hide nick'),
+                            className: 'hideUserLink'
+                        }),
+                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
+                        width = hidden ? 21 : 15,
+                        linkContent = Object.assign(document.createElement('img'), {
+                            src: src,
+                            width: width,
+                            height: 15,
+                            border: 0,
+                            align: 'bottom',
+                            alt: gettext.__('Hide nick')
+                        });
+
+                    link.appendChild(linkContent);
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.parentElement.parentElement.remove();
+
+                        if (hidden) {
+                            Utils.Db.removeUser(nick, 0);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 0);
+                        }
+                    });
+
+                    el.prepend(link);
+                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
+                },
+                embedHighlightUserLink: function (el, nick, highlighted) {
+                    highlighted = highlighted || false;
+
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: highlighted ? gettext.__('Stop highlighting nick') : gettext.__('Highlight nick'),
+                            className: 'highlightUserLink'
+                        }),
+                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
+                        linkContent = Object.assign(document.createElement('img'), {
+                            src: src,
+                            width: 15,
+                            height: 15,
+                            border: 0,
+                            align: 'bottom',
+                            alt: gettext.__('Highlight nick')
+                        });
+
+                    link.appendChild(linkContent);
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.parentElement.parentElement.remove();
+
+                        if (highlighted) {
+                            Utils.Db.removeUser(nick, 1);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 1);
+                        }
+                    });
+
+                    el.prepend(link);
+                },
+                embedUserLinks: async function (el, nick, highlight, hide) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    if (config.useHiding) {
+                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
+                    }
+
+                    if (config.useHighlighting) {
+                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
                     }
                 },
-                isVip: function (infoEl) {
-                    let imgs = infoEl.querySelectorAll('img'),
-                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
+                embedYoutube: function (el) {
+                    let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
+                        links = el.querySelectorAll('a')
 
-                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
+                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
+                        rel.remove();
+                    });
+
+                    if (links.length > 0) {
+                        links.forEach(function (link) {
+                            Utils.Dom.embedYoutubeThumbnails(el, [...link.href.matchAll(regexp)]);
+                        });
+                    } else {
+                        Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
+                    }
                 },
                 embedYoutubeThumbnails: function (el, matches, makeLinks) {
                     let thumb = config.youtubeThumbnails.get(config.youtubeThumbnail);
@@ -331,104 +413,16 @@ sinner(function () {
                         el.appendChild(container);
                     });
                 },
-                embedYoutube: function (el) {
-                    let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
-                        links = el.querySelectorAll('a')
+                isVip: function (infoEl) {
+                    let imgs = infoEl.querySelectorAll('img'),
+                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
 
-                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
-                        rel.remove();
-                    });
-
-                    if (links.length > 0) {
-                        links.forEach(function (link) {
-                            Utils.Dom.embedYoutubeThumbnails(el, [...link.href.matchAll(regexp)]);
-                        });
-                    } else {
-                        Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
+                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
+                },
+                removeAllChildNodes: function (parent) {
+                    while (parent.firstChild) {
+                        parent.removeChild(parent.firstChild);
                     }
-                },
-                embedHighlightUserLink: function (el, nick, highlighted) {
-                    highlighted = highlighted || false;
-
-                    let link = Object.assign(document.createElement('a'), {
-                            href: '#',
-                            title: highlighted ? gettext.__('Stop highlighting nick') : gettext.__('Highlight nick'),
-                            className: 'highlightUserLink'
-                        }),
-                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
-                        linkContent = Object.assign(document.createElement('img'), {
-                            src: src,
-                            width: 15,
-                            height: 15,
-                            border: 0,
-                            align: 'bottom',
-                            alt: gettext.__('Highlight nick')
-                        });
-
-                    link.appendChild(linkContent);
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        e.target.parentElement.parentElement.remove();
-
-                        if (highlighted) {
-                            Utils.Db.removeUser(nick, 1);
-                        } else {
-                            Utils.Db.addOrToggleUser(nick, 1);
-                        }
-                    });
-
-                    el.prepend(link);
-                },
-                embedHideUserLink: function (el, nick, hidden) {
-                    hidden = hidden || false;
-
-                    let link = Object.assign(document.createElement('a'), {
-                            href: '#',
-                            title: hidden ? gettext.__('Stop hiding nick') : gettext.__('Hide nick'),
-                            className: 'hideUserLink'
-                        }),
-                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
-                        width = hidden ? 21 : 15,
-                        linkContent = Object.assign(document.createElement('img'), {
-                            src: src,
-                            width: width,
-                            height: 15,
-                            border: 0,
-                            align: 'bottom',
-                            alt: gettext.__('Hide nick')
-                        });
-
-                    link.appendChild(linkContent);
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        e.target.parentElement.parentElement.remove();
-
-                        if (hidden) {
-                            Utils.Db.removeUser(nick, 0);
-                        } else {
-                            Utils.Db.addOrToggleUser(nick, 0);
-                        }
-                    });
-
-                    el.prepend(link);
-                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
-                },
-                embedUserLinks: async function (el, nick, highlight, hide) {
-                    let compressed = Utils.String.compress(nick, true, true, true);
-
-                    if (config.useHiding) {
-                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
-                    }
-
-                    if (config.useHighlighting) {
-                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
-                    }
-                },
-                transformAnchorTargets: function () {
-                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
-                        link.classList.add('transformedAnchor');
-                        link.removeAttribute('target');
-                    });
                 },
                 replaceAvatar: function (container, src) {
                     if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
@@ -464,20 +458,17 @@ sinner(function () {
 
                     link.appendChild(img);
                     container.appendChild(link);
+                },
+                transformAnchorTargets: function () {
+                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                        link.classList.add('transformedAnchor');
+                        link.removeAttribute('target');
+                    });
                 }
             },
             String: {
-                replaceIAll: function (str, searchValue, newValue) {
-                    let escaped = searchValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),
-                        regexp = new RegExp(escaped, 'ig');
-
-                    return str.replace(regexp, newValue);
-                },
                 capitalizeFirstLetter: function (s) {
                     return s[0].toUpperCase() + s.slice(1);
-                },
-                noAccent: function (str) {
-                    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
                 compress: function (str, noAccent, lowerCase, noSpaces) {
                     let result = str;
@@ -495,6 +486,28 @@ sinner(function () {
                     }
 
                     return result;
+                },
+                containsWord: function (el, words) {
+                    let content = el.innerText.trim(),
+                        haystack = Utils.String.compress(content, true),
+                        result = false;
+
+                    for (let word of words) {
+                        if (result) {
+                            continue;
+                        }
+
+                        let needle = Utils.String.compress(word, true);
+
+                        if (Utils.String.stripos(haystack, needle) !== false) {
+                            result = true;
+                        }
+                    }
+
+                    return result;
+                },
+                noAccent: function (str) {
+                    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
                 rc4: function (key, str) {
                     let s = [],
@@ -520,6 +533,12 @@ sinner(function () {
 
                     return res;
                 },
+                replaceIAll: function (str, searchValue, newValue) {
+                    let escaped = searchValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),
+                        regexp = new RegExp(escaped, 'ig');
+
+                    return str.replace(regexp, newValue);
+                },
                 stripos: function (haystack, needle, offset) {
                     let index = 0;
 
@@ -534,25 +553,6 @@ sinner(function () {
                 },
                 unwrap: function (el) {
                     el.outerHTML = el.innerHTML;
-                },
-                containsWord: function (el, words) {
-                    let content = el.innerText.trim(),
-                        haystack = Utils.String.compress(content, true),
-                        result = false;
-
-                    for (let word of words) {
-                        if (result) {
-                            continue;
-                        }
-
-                        let needle = Utils.String.compress(word, true);
-
-                        if (Utils.String.stripos(haystack, needle) !== false) {
-                            result = true;
-                        }
-                    }
-
-                    return result;
                 },
                 wrapAll: function (el, words, className) {
                     let result = el.innerHTML;
@@ -569,40 +569,6 @@ sinner(function () {
                 },
             },
             Db: {
-                initialize: function () {
-                    let database = new Dexie('Sinner');
-
-                    database.version(1).stores({
-                        idioms: '$$uuid, [subject+highlight], content'
-                    });
-
-                    database.open().catch(function (e) {
-                        console.error('Failed to open database: ' + e.stack);
-                    });
-
-                    return database;
-                },
-                deleteIdiom: function (item) {
-                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
-                    }).catch(function (err) {
-                        console.error(err);
-                    });
-                },
-                removeUser: function (nick, highlight) {
-                    let compressed = Utils.String.compress(nick, true, true, true);
-
-                    highlight = highlight || 0;
-
-                    db.idioms.where('subject').equals('user').and(function (rec) {
-                        let content = Utils.String.compress(rec.content, true, true, true);
-
-                        return rec.highlight === highlight && compressed === content;
-                    }).toArray(function (arr) {
-                        arr.forEach(function (item) {
-                            Utils.Db.deleteIdiom(item);
-                        });
-                    });
-                },
                 addOrToggleUser: function (nick, highlight) {
                     let record = {
                             subject: 'user',
@@ -627,6 +593,12 @@ sinner(function () {
                         });
                     });
                 },
+                deleteIdiom: function (item) {
+                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
+                    }).catch(function (err) {
+                        console.error(err);
+                    });
+                },
                 getIdioms: function (subject, highlight, compress) {
                     highlight = highlight || false;
                     compress = compress || false;
@@ -646,16 +618,38 @@ sinner(function () {
                             return self.indexOf(value) === index;
                         });
                     });
+                },
+                initialize: function () {
+                    let database = new Dexie('Sinner');
+
+                    database.version(1).stores({
+                        idioms: '$$uuid, [subject+highlight], content'
+                    });
+
+                    database.open().catch(function (e) {
+                        console.error('Failed to open database: ' + e.stack);
+                    });
+
+                    return database;
+                },
+                removeUser: function (nick, highlight) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return rec.highlight === highlight && compressed === content;
+                    }).toArray(function (arr) {
+                        arr.forEach(function (item) {
+                            Utils.Db.deleteIdiom(item);
+                        });
+                    });
                 }
             }
         },
         Settings = {
-            getTargetByItem: function (item) {
-                return 'ul#' + (item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject);
-            },
-            getCaptionByItem: function (item) {
-                return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
-            },
             appendItem: function (item) {
                 let li = Object.assign(document.createElement('li'), {id: 'settingsModal-' + item.uuid}),
                     a = Object.assign(document.createElement('a'), {href: '#'}),
@@ -683,80 +677,6 @@ sinner(function () {
                 li.appendChild(a);
                 document.querySelector(target).appendChild(li);
                 caption.style.display = 'none';
-            },
-            removeItem: function (item) {
-                document.getElementById('settingsModal-' + item.uuid).remove();
-
-                db.idioms.where({
-                    subject: item.subject,
-                    highlight: item.highlight
-                }).count().then(function (cnt) {
-                    if (cnt > 0) {
-                        return false;
-                    }
-
-                    Settings.getCaptionByItem(item).style.display = 'inline';
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
-            enforceDomain: function (hostname) {
-                if (window.location.hostname === hostname || hostname === '.' || !config.domains.has(hostname)) {
-                    return;
-                }
-
-                let location = window.location.protocol + '//' + hostname +
-                    (window.location.port.length ? ':' + window.location.port : '') +
-                    window.location.pathname + window.location.search + window.location.hash;
-
-                window.location.assign(location);
-            },
-            showRecords: function (subject, highlight) {
-                db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
-                    Settings.appendItem(item);
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
-            processForm: function (data) {
-                let record = {
-                        subject: data.get('subject'),
-                        highlight: parseInt(data.get('highlight')),
-                        content: data.get('content').trim()
-                    },
-                    alertOptions = {
-                        okText: gettext.__('OK'),
-                        container: document.querySelector('div.tingle-modal-box__content')
-                    },
-                    minLength = 3;
-
-                if (record.content.length < minLength) {
-                    let msg = gettext._n('Minimal length is %1 character', 'Minimal length is %1 characters', minLength);
-
-                    DayPilot.Modal.alert(msg, alertOptions);
-
-                    return false;
-                }
-
-                document.querySelector('input#sinnerInputContent').value = '';
-
-                db.idioms.where('content').equalsIgnoreCase(record.content).and(function (rec) {
-                    return rec.subject === record.subject;
-                }).count().then(function (cnt) {
-                    if (cnt > 0) {
-                        let highlight = record.highlight === 1 ? gettext.__('hidden ones') : gettext.__('highlighted ones'),
-                            msg = gettext.__('Record exists in %1, it is impossible to save it in both', highlight);
-
-                        DayPilot.Modal.alert(msg, alertOptions);
-
-                        return false;
-                    }
-
-                    return db.idioms.add(record);
-                }).then(function (uuid) {
-                }).catch(function (err) {
-                    console.error(err);
-                });
             },
             backup: function () {
                 let promptOptions = {
@@ -793,54 +713,22 @@ sinner(function () {
                     console.error(err);
                 });
             },
-            restore: function () {
-                let promptOptions = {
-                        okText: gettext.__('Send'),
-                        cancelText: gettext.__('Cancel'),
-                        container: document.querySelector('div.tingle-modal-box__content')
-                    },
-                    input = Object.assign(document.createElement('input'), {
-                        type: 'file'
-                    });
+            enforceDomain: function (hostname) {
+                if (window.location.hostname === hostname || hostname === '.' || !config.domains.has(hostname)) {
+                    return;
+                }
 
-                input.onchange = function (e) {
-                    let file = e.target.files[0],
-                        reader = new FileReader();
+                let location = window.location.protocol + '//' + hostname +
+                    (window.location.port.length ? ':' + window.location.port : '') +
+                    window.location.pathname + window.location.search + window.location.hash;
 
-                    reader.readAsText(file, 'UTF-8');
-
-                    reader.onload = function (eRead) {
-                        let raw = eRead.target.result;
-
-                        DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
-                            if (typeof args.result === 'undefined' || args.result.length === 0) {
-                                return;
-                            }
-
-                            let csv = Utils.String.rc4(args.result, raw),
-                                data = Papa.parse(csv, {
-                                    header: true,
-                                    dynamicTyping: true
-                                });
-
-                            promptOptions.okText = gettext.__('OK');
-
-                            if (data.errors.length > 0) {
-                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
-                            } else {
-                                db.idioms.clear().then(function () {
-                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
-                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
-                                    }).catch(Dexie.BulkError, function (err) {
-                                        console.error(err);
-                                    });
-                                });
-                            }
-                        });
-                    }
-                };
-
-                input.click();
+                window.location.assign(location);
+            },
+            getCaptionByItem: function (item) {
+                return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
+            },
+            getTargetByItem: function (item) {
+                return 'ul#' + (item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject);
             },
             initializeModal: function () {
                 let type = Object.assign(document.createElement('input'), {
@@ -1178,6 +1066,118 @@ sinner(function () {
                 db.on('changes', Events.Modal.observableListener);
 
                 settingsModal.tabs = new Tabby('[data-tabs]');
+            },
+            processForm: function (data) {
+                let record = {
+                        subject: data.get('subject'),
+                        highlight: parseInt(data.get('highlight')),
+                        content: data.get('content').trim()
+                    },
+                    alertOptions = {
+                        okText: gettext.__('OK'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    minLength = 3;
+
+                if (record.content.length < minLength) {
+                    let msg = gettext._n('Minimal length is %1 character', 'Minimal length is %1 characters', minLength);
+
+                    DayPilot.Modal.alert(msg, alertOptions);
+
+                    return false;
+                }
+
+                document.querySelector('input#sinnerInputContent').value = '';
+
+                db.idioms.where('content').equalsIgnoreCase(record.content).and(function (rec) {
+                    return rec.subject === record.subject;
+                }).count().then(function (cnt) {
+                    if (cnt > 0) {
+                        let highlight = record.highlight === 1 ? gettext.__('hidden ones') : gettext.__('highlighted ones'),
+                            msg = gettext.__('Record exists in %1, it is impossible to save it in both', highlight);
+
+                        DayPilot.Modal.alert(msg, alertOptions);
+
+                        return false;
+                    }
+
+                    return db.idioms.add(record);
+                }).then(function (uuid) {
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            },
+            removeItem: function (item) {
+                document.getElementById('settingsModal-' + item.uuid).remove();
+
+                db.idioms.where({
+                    subject: item.subject,
+                    highlight: item.highlight
+                }).count().then(function (cnt) {
+                    if (cnt > 0) {
+                        return false;
+                    }
+
+                    Settings.getCaptionByItem(item).style.display = 'inline';
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            },
+            restore: function () {
+                let promptOptions = {
+                        okText: gettext.__('Send'),
+                        cancelText: gettext.__('Cancel'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    input = Object.assign(document.createElement('input'), {
+                        type: 'file'
+                    });
+
+                input.onchange = function (e) {
+                    let file = e.target.files[0],
+                        reader = new FileReader();
+
+                    reader.readAsText(file, 'UTF-8');
+
+                    reader.onload = function (eRead) {
+                        let raw = eRead.target.result;
+
+                        DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
+                            if (typeof args.result === 'undefined' || args.result.length === 0) {
+                                return;
+                            }
+
+                            let csv = Utils.String.rc4(args.result, raw),
+                                data = Papa.parse(csv, {
+                                    header: true,
+                                    dynamicTyping: true
+                                });
+
+                            promptOptions.okText = gettext.__('OK');
+
+                            if (data.errors.length > 0) {
+                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
+                            } else {
+                                db.idioms.clear().then(function () {
+                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
+                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
+                                    }).catch(Dexie.BulkError, function (err) {
+                                        console.error(err);
+                                    });
+                                });
+                            }
+                        });
+                    }
+                };
+
+                input.click();
+            },
+            showRecords: function (subject, highlight) {
+                db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
+                    Settings.appendItem(item);
+                }).catch(function (err) {
+                    console.error(err);
+                });
             }
         };
 
