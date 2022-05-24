@@ -187,6 +187,10 @@ sinner(function () {
                 }
             },
             Modal: {
+                formSubmitListener: function (e) {
+                    e.preventDefault();
+                    Settings.processForm(new FormData(e.target));
+                },
                 observableListener: function (changes) {
                     changes.forEach(function (change) {
                         if (change.table !== 'idioms') {
@@ -885,10 +889,7 @@ sinner(function () {
                 form.appendChild(text);
                 form.insertAdjacentHTML('beforeend', '&nbsp;');
                 form.appendChild(submit);
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    Settings.processForm(new FormData(e.target));
-                });
+                form.addEventListener('submit', Events.Modal.formSubmitListener);
 
                 settingsModal = new tingle.modal({
                     footer: true,
