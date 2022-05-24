@@ -27,8 +27,6 @@ function sinner(callback) {
 
 sinner(function () {
     let db,
-        page,
-        settingsModal,
         gettext = (function () {
             let gettext = i18n(),
                 lang = window.location.hostname.match(/^(www\.)?spovednica\.sk$/) ? 'sk' : 'cz';
@@ -37,24 +35,32 @@ sinner(function () {
             gettext.setLocale(lang);
 
             return gettext;
-        })();
+        })(),
+        page,
+        settingsModal;
 
     const config = {
             color: GM_getValue('sinner.highlightColor', '#ff0000'),
             domain: GM_getValue('sinner.enforceDomain', '.'),
-            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
-            hideDeleted: GM_getValue('sinner.hideDeleted', false),
-            hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
-            useHighlighting: GM_getValue('sinner.useHighlighting', true),
-            useHiding: GM_getValue('sinner.useHiding', true),
-            transformAnchors: GM_getValue('sinner.transformAnchors', false),
-            transformAvatars: GM_getValue('sinner.transformAvatars', false),
             domains: new Map([
                 ['.', gettext.__('-- do not use --')],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
+            hideDeleted: GM_getValue('sinner.hideDeleted', false),
+            hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
+            questions: new Map([
+                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
+                ['ul#hideUser', gettext.__('Really delete hidden user?')],
+                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
+                ['ul#hideWord', gettext.__('Really delete hidden term?')]
+            ]),
+            transformAnchors: GM_getValue('sinner.transformAnchors', false),
+            transformAvatars: GM_getValue('sinner.transformAvatars', false),
+            useHiding: GM_getValue('sinner.useHiding', true),
+            useHighlighting: GM_getValue('sinner.useHighlighting', true),
+            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
             youtubeThumbnails: new Map([
                 [0, {
                     label: gettext.__('-- none --')
@@ -87,12 +93,6 @@ sinner(function () {
                     height: 360,
                     pattern: 'https://img.youtube.com/vi/[id]/hqdefault.jpg'
                 }]
-            ]),
-            questions: new Map([
-                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
-                ['ul#hideUser', gettext.__('Really delete hidden user?')],
-                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
-                ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ])
         },
         cssRules = new Map([
@@ -129,6 +129,120 @@ sinner(function () {
                 index: 3
             }]
         ]),
+        Events = {
+            Config: {
+                enforceDomainChangeListener: function (key, old_value, new_value, remote) {
+                    Settings.enforceDomain(new_value);
+                },
+                hideDeletedChangeListener: function (key, old_value, new_value, remote) {
+                    config.hideDeleted = new_value;
+                    page.resetDeleted();
+                    page.processDeleted();
+                },
+                hideUnregisteredChangeListener: function (key, old_value, new_value, remote) {
+                    config.hideUnregistered = new_value;
+                    page.resetNicks();
+                    page.processNicks();
+                },
+                highlightColorChangeListener: function (key, old_value, new_value, remote) {
+                    config.color = new_value;
+
+                    Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('postHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
+
+                    if (typeof settingsModal !== 'undefined' && remote) {
+                        document.getElementById('colorPicker').value = config.color;
+                    }
+                },
+                transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
+                    config.transformAnchors = new_value;
+                    page.resetAnchors();
+                    page.processAnchors();
+                },
+                transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
+                    config.transformAvatars = new_value;
+                    page.resetAvatars();
+                    page.processAvatars();
+                },
+                useHidingChangeListener: function (key, old_value, new_value, remote) {
+                    config.useHiding = new_value;
+                    page.resetNicks();
+                    page.resetTexts();
+                    page.processNicks();
+                    page.processTexts();
+                },
+                useHighlightingChangeListener: function (key, old_value, new_value, remote) {
+                    config.useHighlighting = new_value;
+                    page.resetNicks();
+                    page.resetTexts();
+                    page.processNicks();
+                    page.processTexts();
+                },
+                youtubeThumbnailChangeListener: function (key, old_value, new_value, remote) {
+                    config.youtubeThumbnail = new_value;
+                    page.resetTexts();
+                    page.processTexts();
+                }
+            },
+            Modal: {
+                formSubmitListener: function (e) {
+                    e.preventDefault();
+                    Settings.processForm(new FormData(e.target));
+                },
+                observableListener: function (changes) {
+                    changes.forEach(function (change) {
+                        if (change.table !== 'idioms') {
+                            return;
+                        }
+
+                        switch (change.type) {
+                            case 1:
+                                Settings.appendItem(change.obj);
+                                break;
+                            case 2:
+                                if (typeof change.mods.highlight === 'undefined') {
+                                    return;
+                                }
+
+                                let append = Object.assign(change.obj, {
+                                    highlight: change.mods.highlight
+                                });
+
+                                Settings.removeItem(change.obj);
+                                Settings.appendItem(append);
+                                break;
+                            case 3:
+                                Settings.removeItem(change.oldObj);
+                                break;
+                        }
+                    });
+                }
+            },
+            Page: {
+                observableListener(changes) {
+                    changes.forEach(function (change) {
+                        if (change.table !== 'idioms') {
+                            return;
+                        }
+
+                        let subject = typeof change.oldObj === 'undefined' ? change.obj.subject : change.oldObj.subject;
+
+                        switch (subject) {
+                            case 'user':
+                                page.resetNicks();
+                                page.processNicks();
+                                break;
+                            case 'word':
+                                page.resetTexts();
+                                page.processTexts();
+                                break;
+                        }
+                    });
+                }
+            }
+        },
         Utils = {
             Css: {
                 initializeStylesheet: function () {
@@ -140,11 +254,6 @@ sinner(function () {
                         });
                     });
                 },
-                setStyle: function (name, key, value) {
-                    let rule = cssRules.get(name);
-
-                    sinnerStyle.sheet.cssRules[rule.index].style[key] = value;
-                },
                 removeClass: function (classNames) {
                     classNames = typeof classNames === 'string' ? [classNames] : classNames;
 
@@ -153,19 +262,106 @@ sinner(function () {
                             el.classList.remove(className);
                         });
                     });
+                },
+                setStyle: function (name, key, value) {
+                    let rule = cssRules.get(name);
+
+                    sinnerStyle.sheet.cssRules[rule.index].style[key] = value;
                 }
             },
             Dom: {
-                removeAllChildNodes: function (parent) {
-                    while (parent.firstChild) {
-                        parent.removeChild(parent.firstChild);
+                embedHideUserLink: function (el, nick, hidden) {
+                    hidden = hidden || false;
+
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: hidden ? gettext.__('Stop hiding nick') : gettext.__('Hide nick'),
+                            className: 'hideUserLink'
+                        }),
+                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
+                        width = hidden ? 21 : 15,
+                        linkContent = Object.assign(document.createElement('img'), {
+                            src: src,
+                            width: width,
+                            height: 15,
+                            border: 0,
+                            align: 'bottom',
+                            alt: gettext.__('Hide nick')
+                        });
+
+                    link.appendChild(linkContent);
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.parentElement.parentElement.remove();
+
+                        if (hidden) {
+                            Utils.Db.removeUser(nick, 0);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 0);
+                        }
+                    });
+
+                    el.prepend(link);
+                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
+                },
+                embedHighlightUserLink: function (el, nick, highlighted) {
+                    highlighted = highlighted || false;
+
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: highlighted ? gettext.__('Stop highlighting nick') : gettext.__('Highlight nick'),
+                            className: 'highlightUserLink'
+                        }),
+                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
+                        linkContent = Object.assign(document.createElement('img'), {
+                            src: src,
+                            width: 15,
+                            height: 15,
+                            border: 0,
+                            align: 'bottom',
+                            alt: gettext.__('Highlight nick')
+                        });
+
+                    link.appendChild(linkContent);
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.parentElement.parentElement.remove();
+
+                        if (highlighted) {
+                            Utils.Db.removeUser(nick, 1);
+                        } else {
+                            Utils.Db.addOrToggleUser(nick, 1);
+                        }
+                    });
+
+                    el.prepend(link);
+                },
+                embedUserLinks: async function (el, nick, highlight, hide) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    if (config.useHiding) {
+                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
+                    }
+
+                    if (config.useHighlighting) {
+                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
                     }
                 },
-                isVip: function (infoEl) {
-                    let imgs = infoEl.querySelectorAll('img'),
-                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
+                embedYoutube: function (el) {
+                    let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
+                        links = el.querySelectorAll('a')
 
-                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
+                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
+                        rel.remove();
+                    });
+
+                    if (links.length > 0) {
+                        links.forEach(function (link) {
+                            Utils.Dom.embedYoutubeThumbnails(el, [...link.href.matchAll(regexp)]);
+                        });
+                    } else {
+                        Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
+                    }
                 },
                 embedYoutubeThumbnails: function (el, matches, makeLinks) {
                     let thumb = config.youtubeThumbnails.get(config.youtubeThumbnail);
@@ -217,110 +413,15 @@ sinner(function () {
                         el.appendChild(container);
                     });
                 },
-                embedYoutube: function (el) {
-                    let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
-                        links = el.querySelectorAll('a')
+                isVip: function (infoEl) {
+                    let imgs = infoEl.querySelectorAll('img'),
+                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
 
-                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
-                        rel.remove();
-                    });
-
-                    if (links.length > 0) {
-                        links.forEach(function (link) {
-                            Utils.Dom.embedYoutubeThumbnails(el, [...link.href.matchAll(regexp)]);
-                        });
-                    } else {
-                        Utils.Dom.embedYoutubeThumbnails(el, [...el.innerHTML.matchAll(regexp)], true);
-                    }
+                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
                 },
-                embedHighlightUserLink: function (el, nick, highlighted) {
-                    highlighted = highlighted || false;
-
-                    let link = Object.assign(document.createElement('a'), {
-                            href: '#',
-                            title: highlighted ? gettext.__('Stop highlighting nick') : gettext.__('Highlight nick'),
-                            className: 'highlightUserLink'
-                        }),
-                        src = highlighted ? '/grafika/s6.gif' : '/grafika/s3.gif',
-                        linkContent = Object.assign(document.createElement('img'), {
-                            src: src,
-                            width: 15,
-                            height: 15,
-                            border: 0,
-                            align: 'bottom',
-                            alt: gettext.__('Highlight nick')
-                        });
-
-                    link.appendChild(linkContent);
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        e.target.parentElement.parentElement.remove();
-
-                        if (highlighted) {
-                            Utils.Db.removeUser(nick, 1);
-                        } else {
-                            Utils.Db.addOrToggleUser(nick, 1);
-                        }
-                    });
-
-                    el.prepend(link);
-                },
-                embedHideUserLink: function (el, nick, hidden) {
-                    hidden = hidden || false;
-
-                    let link = Object.assign(document.createElement('a'), {
-                            href: '#',
-                            title: hidden ? gettext.__('Stop hiding nick') : gettext.__('Hide nick'),
-                            className: 'hideUserLink'
-                        }),
-                        src = hidden ? '/grafika/s11.gif' : '/grafika/s8.gif',
-                        width = hidden ? 21 : 15,
-                        linkContent = Object.assign(document.createElement('img'), {
-                            src: src,
-                            width: width,
-                            height: 15,
-                            border: 0,
-                            align: 'bottom',
-                            alt: gettext.__('Hide nick')
-                        });
-
-                    link.appendChild(linkContent);
-                    link.addEventListener('click', function (e) {
-                        e.preventDefault();
-                        e.target.parentElement.parentElement.remove();
-
-                        if (hidden) {
-                            Utils.Db.removeUser(nick, 0);
-                        } else {
-                            Utils.Db.addOrToggleUser(nick, 0);
-                        }
-                    });
-
-                    el.prepend(link);
-                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
-                },
-                embedUserLinks: async function (el, nick, highlight, hide) {
-                    let compressed = Utils.String.compress(nick, true, true, true);
-
-                    if (config.useHiding) {
-                        Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
-                    }
-
-                    if (config.useHighlighting) {
-                        Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
-                    }
-                },
-                transformAnchorTargets: function () {
-                    if (config.transformAnchors) {
-                        document.querySelectorAll("a[target='_blank']").forEach(function (link) {
-                            link.classList.add('transformedAnchor');
-                            link.removeAttribute('target');
-                        });
-                    } else {
-                        document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
-                            link.target = '_blank';
-                            link.classList.remove('transformedAnchor');
-                        });
+                removeAllChildNodes: function (parent) {
+                    while (parent.firstChild) {
+                        parent.removeChild(parent.firstChild);
                     }
                 },
                 replaceAvatar: function (container, src) {
@@ -357,20 +458,17 @@ sinner(function () {
 
                     link.appendChild(img);
                     container.appendChild(link);
+                },
+                transformAnchorTargets: function () {
+                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                        link.classList.add('transformedAnchor');
+                        link.removeAttribute('target');
+                    });
                 }
             },
             String: {
-                replaceIAll: function (str, searchValue, newValue) {
-                    let escaped = searchValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),
-                        regexp = new RegExp(escaped, 'ig');
-
-                    return str.replace(regexp, newValue);
-                },
                 capitalizeFirstLetter: function (s) {
                     return s[0].toUpperCase() + s.slice(1);
-                },
-                noAccent: function (str) {
-                    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
                 compress: function (str, noAccent, lowerCase, noSpaces) {
                     let result = str;
@@ -388,6 +486,28 @@ sinner(function () {
                     }
 
                     return result;
+                },
+                containsWord: function (el, words) {
+                    let content = el.innerText.trim(),
+                        haystack = Utils.String.compress(content, true),
+                        result = false;
+
+                    for (let word of words) {
+                        if (result) {
+                            continue;
+                        }
+
+                        let needle = Utils.String.compress(word, true);
+
+                        if (Utils.String.stripos(haystack, needle) !== false) {
+                            result = true;
+                        }
+                    }
+
+                    return result;
+                },
+                noAccent: function (str) {
+                    return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
                 rc4: function (key, str) {
                     let s = [],
@@ -413,6 +533,12 @@ sinner(function () {
 
                     return res;
                 },
+                replaceIAll: function (str, searchValue, newValue) {
+                    let escaped = searchValue.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'),
+                        regexp = new RegExp(escaped, 'ig');
+
+                    return str.replace(regexp, newValue);
+                },
                 stripos: function (haystack, needle, offset) {
                     let index = 0;
 
@@ -427,25 +553,6 @@ sinner(function () {
                 },
                 unwrap: function (el) {
                     el.outerHTML = el.innerHTML;
-                },
-                containsWord: function (el, words) {
-                    let content = el.innerText.trim(),
-                        haystack = Utils.String.compress(content, true),
-                        result = false;
-
-                    for (let word of words) {
-                        if (result) {
-                            continue;
-                        }
-
-                        let needle = Utils.String.compress(word, true);
-
-                        if (Utils.String.stripos(haystack, needle) !== false) {
-                            result = true;
-                        }
-                    }
-
-                    return result;
                 },
                 wrapAll: function (el, words, className) {
                     let result = el.innerHTML;
@@ -462,40 +569,6 @@ sinner(function () {
                 },
             },
             Db: {
-                initialize: function () {
-                    let database = new Dexie('Sinner');
-
-                    database.version(1).stores({
-                        idioms: '$$uuid, [subject+highlight], content'
-                    });
-
-                    database.open().catch(function (e) {
-                        console.error('Failed to open database: ' + e.stack);
-                    });
-
-                    return database;
-                },
-                deleteIdiom: function (item) {
-                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
-                    }).catch(function (err) {
-                        console.error(err);
-                    });
-                },
-                removeUser: function (nick, highlight) {
-                    let compressed = Utils.String.compress(nick, true, true, true);
-
-                    highlight = highlight || 0;
-
-                    db.idioms.where('subject').equals('user').and(function (rec) {
-                        let content = Utils.String.compress(rec.content, true, true, true);
-
-                        return rec.highlight === highlight && compressed === content;
-                    }).toArray(function (arr) {
-                        arr.forEach(function (item) {
-                            Utils.Db.deleteIdiom(item);
-                        });
-                    });
-                },
                 addOrToggleUser: function (nick, highlight) {
                     let record = {
                             subject: 'user',
@@ -520,6 +593,12 @@ sinner(function () {
                         });
                     });
                 },
+                deleteIdiom: function (item) {
+                    db.idioms.where('uuid').equals(item.uuid).delete().then(function (cnt) {
+                    }).catch(function (err) {
+                        console.error(err);
+                    });
+                },
                 getIdioms: function (subject, highlight, compress) {
                     highlight = highlight || false;
                     compress = compress || false;
@@ -539,16 +618,38 @@ sinner(function () {
                             return self.indexOf(value) === index;
                         });
                     });
+                },
+                initialize: function () {
+                    let database = new Dexie('Sinner');
+
+                    database.version(1).stores({
+                        idioms: '$$uuid, [subject+highlight], content'
+                    });
+
+                    database.open().catch(function (e) {
+                        console.error('Failed to open database: ' + e.stack);
+                    });
+
+                    return database;
+                },
+                removeUser: function (nick, highlight) {
+                    let compressed = Utils.String.compress(nick, true, true, true);
+
+                    highlight = highlight || 0;
+
+                    db.idioms.where('subject').equals('user').and(function (rec) {
+                        let content = Utils.String.compress(rec.content, true, true, true);
+
+                        return rec.highlight === highlight && compressed === content;
+                    }).toArray(function (arr) {
+                        arr.forEach(function (item) {
+                            Utils.Db.deleteIdiom(item);
+                        });
+                    });
                 }
             }
         },
         Settings = {
-            getTargetByItem: function (item) {
-                return 'ul#' + (item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject);
-            },
-            getCaptionByItem: function (item) {
-                return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
-            },
             appendItem: function (item) {
                 let li = Object.assign(document.createElement('li'), {id: 'settingsModal-' + item.uuid}),
                     a = Object.assign(document.createElement('a'), {href: '#'}),
@@ -576,156 +677,6 @@ sinner(function () {
                 li.appendChild(a);
                 document.querySelector(target).appendChild(li);
                 caption.style.display = 'none';
-            },
-            removeItem: function (item) {
-                document.getElementById('settingsModal-' + item.uuid).remove();
-
-                db.idioms.where({
-                    subject: item.subject,
-                    highlight: item.highlight
-                }).count().then(function (cnt) {
-                    if (cnt > 0) {
-                        return false;
-                    }
-
-                    Settings.getCaptionByItem(item).style.display = 'inline';
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
-            colorChangeListener: function (key, old_value, new_value, remote) {
-                config.color = new_value;
-
-                Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('postHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
-
-                if (typeof settingsModal !== 'undefined' && remote) {
-                    document.getElementById('colorPicker').value = config.color;
-                }
-            },
-            enforceDomain: function (hostname) {
-                if (window.location.hostname === hostname || hostname === '.' || !config.domains.has(hostname)) {
-                    return;
-                }
-
-                let location = window.location.protocol + '//' + hostname +
-                    (window.location.port.length ? ':' + window.location.port : '') +
-                    window.location.pathname + window.location.search + window.location.hash;
-
-                window.location.assign(location);
-            },
-            domainChangeListener: function (key, old_value, new_value, remote) {
-                Settings.enforceDomain(new_value);
-            },
-            youtubeThumbnailChangeListener: function (key, old_value, new_value, remote) {
-                config.youtubeThumbnail = new_value;
-                page.process();
-            },
-            hideDeletedChangeListener: function (key, old_value, new_value, remote) {
-                config.hideDeleted = new_value;
-
-                if (new_value) {
-                    page.hideDeleted();
-                } else {
-                    page.showDeleted();
-                }
-            },
-            hideUnregisteredChangeListener: function (key, old_value, new_value, remote) {
-                config.hideUnregistered = new_value;
-                page.process();
-            },
-            useHighlightingChangeListener: function (key, old_value, new_value, remote) {
-                config.useHighlighting = new_value;
-                page.process();
-            },
-            useHidingChangeListener: function (key, old_value, new_value, remote) {
-                config.useHiding = new_value;
-                page.process();
-            },
-            transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
-                config.transformAnchors = new_value;
-                Utils.Dom.transformAnchorTargets();
-            },
-            transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
-                config.transformAvatars = new_value;
-                page.processAvatars();
-            },
-            showRecords: function (subject, highlight) {
-                db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
-                    Settings.appendItem(item);
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
-            processForm: function (data) {
-                let record = {
-                        subject: data.get('subject'),
-                        highlight: parseInt(data.get('highlight')),
-                        content: data.get('content').trim()
-                    },
-                    alertOptions = {
-                        okText: gettext.__('OK'),
-                        container: document.querySelector('div.tingle-modal-box__content')
-                    },
-                    minLength = 3;
-
-                if (record.content.length < minLength) {
-                    let msg = gettext._n('Minimal length is %1 character', 'Minimal length is %1 characters', minLength);
-
-                    DayPilot.Modal.alert(msg, alertOptions);
-
-                    return false;
-                }
-
-                document.querySelector('input#sinnerInputContent').value = '';
-
-                db.idioms.where('content').equalsIgnoreCase(record.content).and(function (rec) {
-                    return rec.subject === record.subject;
-                }).count().then(function (cnt) {
-                    if (cnt > 0) {
-                        let highlight = record.highlight === 1 ? gettext.__('hidden ones') : gettext.__('highlighted ones'),
-                            msg = gettext.__('Record exists in %1, it is impossible to save it in both', highlight);
-
-                        DayPilot.Modal.alert(msg, alertOptions);
-
-                        return false;
-                    }
-
-                    return db.idioms.add(record);
-                }).then(function (uuid) {
-                }).catch(function (err) {
-                    console.error(err);
-                });
-            },
-            observableListener: function (changes) {
-                changes.forEach(function (change) {
-                    if (change.table !== 'idioms') {
-                        return;
-                    }
-
-                    switch (change.type) {
-                        case 1:
-                            Settings.appendItem(change.obj);
-                            break;
-                        case 2:
-                            if (typeof change.mods.highlight === 'undefined') {
-                                return;
-                            }
-
-                            let append = Object.assign(change.obj, {
-                                highlight: change.mods.highlight
-                            });
-
-                            Settings.removeItem(change.obj);
-                            Settings.appendItem(append);
-                            break;
-                        case 3:
-                            Settings.removeItem(change.oldObj);
-                            break;
-                    }
-                });
             },
             backup: function () {
                 let promptOptions = {
@@ -762,54 +713,22 @@ sinner(function () {
                     console.error(err);
                 });
             },
-            restore: function () {
-                let promptOptions = {
-                        okText: gettext.__('Send'),
-                        cancelText: gettext.__('Cancel'),
-                        container: document.querySelector('div.tingle-modal-box__content')
-                    },
-                    input = Object.assign(document.createElement('input'), {
-                        type: 'file'
-                    });
+            enforceDomain: function (hostname) {
+                if (window.location.hostname === hostname || hostname === '.' || !config.domains.has(hostname)) {
+                    return;
+                }
 
-                input.onchange = function (e) {
-                    let file = e.target.files[0],
-                        reader = new FileReader();
+                let location = window.location.protocol + '//' + hostname +
+                    (window.location.port.length ? ':' + window.location.port : '') +
+                    window.location.pathname + window.location.search + window.location.hash;
 
-                    reader.readAsText(file, 'UTF-8');
-
-                    reader.onload = function (eRead) {
-                        let raw = eRead.target.result;
-
-                        DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
-                            if (typeof args.result === 'undefined' || args.result.length === 0) {
-                                return;
-                            }
-
-                            let csv = Utils.String.rc4(args.result, raw),
-                                data = Papa.parse(csv, {
-                                    header: true,
-                                    dynamicTyping: true
-                                });
-
-                            promptOptions.okText = gettext.__('OK');
-
-                            if (data.errors.length > 0) {
-                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
-                            } else {
-                                db.idioms.clear().then(function () {
-                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
-                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
-                                    }).catch(Dexie.BulkError, function (err) {
-                                        console.error(err);
-                                    });
-                                });
-                            }
-                        });
-                    }
-                };
-
-                input.click();
+                window.location.assign(location);
+            },
+            getCaptionByItem: function (item) {
+                return document.getElementById((item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject) + 'None');
+            },
+            getTargetByItem: function (item) {
+                return 'ul#' + (item.highlight === 1 ? 'highlight' : 'hide') + Utils.String.capitalizeFirstLetter(item.subject);
             },
             initializeModal: function () {
                 let type = Object.assign(document.createElement('input'), {
@@ -858,10 +777,7 @@ sinner(function () {
                 form.appendChild(text);
                 form.insertAdjacentHTML('beforeend', '&nbsp;');
                 form.appendChild(submit);
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    Settings.processForm(new FormData(e.target));
-                });
+                form.addEventListener('submit', Events.Modal.formSubmitListener);
 
                 settingsModal = new tingle.modal({
                     footer: true,
@@ -1147,8 +1063,121 @@ sinner(function () {
                 document.getElementById('colorPicker').addEventListener('change', function (e) {
                     GM_setValue('sinner.highlightColor', e.target.value)
                 });
+                db.on('changes', Events.Modal.observableListener);
 
                 settingsModal.tabs = new Tabby('[data-tabs]');
+            },
+            processForm: function (data) {
+                let record = {
+                        subject: data.get('subject'),
+                        highlight: parseInt(data.get('highlight')),
+                        content: data.get('content').trim()
+                    },
+                    alertOptions = {
+                        okText: gettext.__('OK'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    minLength = 3;
+
+                if (record.content.length < minLength) {
+                    let msg = gettext._n('Minimal length is %1 character', 'Minimal length is %1 characters', minLength);
+
+                    DayPilot.Modal.alert(msg, alertOptions);
+
+                    return false;
+                }
+
+                document.querySelector('input#sinnerInputContent').value = '';
+
+                db.idioms.where('content').equalsIgnoreCase(record.content).and(function (rec) {
+                    return rec.subject === record.subject;
+                }).count().then(function (cnt) {
+                    if (cnt > 0) {
+                        let highlight = record.highlight === 1 ? gettext.__('hidden ones') : gettext.__('highlighted ones'),
+                            msg = gettext.__('Record exists in %1, it is impossible to save it in both', highlight);
+
+                        DayPilot.Modal.alert(msg, alertOptions);
+
+                        return false;
+                    }
+
+                    return db.idioms.add(record);
+                }).then(function (uuid) {
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            },
+            removeItem: function (item) {
+                document.getElementById('settingsModal-' + item.uuid).remove();
+
+                db.idioms.where({
+                    subject: item.subject,
+                    highlight: item.highlight
+                }).count().then(function (cnt) {
+                    if (cnt > 0) {
+                        return false;
+                    }
+
+                    Settings.getCaptionByItem(item).style.display = 'inline';
+                }).catch(function (err) {
+                    console.error(err);
+                });
+            },
+            restore: function () {
+                let promptOptions = {
+                        okText: gettext.__('Send'),
+                        cancelText: gettext.__('Cancel'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    input = Object.assign(document.createElement('input'), {
+                        type: 'file'
+                    });
+
+                input.onchange = function (e) {
+                    let file = e.target.files[0],
+                        reader = new FileReader();
+
+                    reader.readAsText(file, 'UTF-8');
+
+                    reader.onload = function (eRead) {
+                        let raw = eRead.target.result;
+
+                        DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
+                            if (typeof args.result === 'undefined' || args.result.length === 0) {
+                                return;
+                            }
+
+                            let csv = Utils.String.rc4(args.result, raw),
+                                data = Papa.parse(csv, {
+                                    header: true,
+                                    dynamicTyping: true
+                                });
+
+                            promptOptions.okText = gettext.__('OK');
+
+                            if (data.errors.length > 0) {
+                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
+                            } else {
+                                db.idioms.clear().then(function () {
+                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
+                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
+                                    }).catch(Dexie.BulkError, function (err) {
+                                        console.error(err);
+                                    });
+                                });
+                            }
+                        });
+                    }
+                };
+
+                input.click();
+            },
+            showRecords: function (subject, highlight) {
+                db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
+                    Settings.appendItem(item);
+                }).catch(function (err) {
+                    console.error(err);
+                });
             }
         };
 
@@ -1160,17 +1189,17 @@ sinner(function () {
         initialize() {
             db = Utils.Db.initialize();
 
-            db.on('changes', this.observableListener);
+            db.on('changes', Events.Page.observableListener);
 
-            GM_addValueChangeListener('sinner.highlightColor', Settings.colorChangeListener);
-            GM_addValueChangeListener('sinner.enforceDomain', Settings.domainChangeListener);
-            GM_addValueChangeListener('sinner.youtubeThumbnail', Settings.youtubeThumbnailChangeListener);
-            GM_addValueChangeListener('sinner.hideDeleted', Settings.hideDeletedChangeListener);
-            GM_addValueChangeListener('sinner.hideUnregistered', Settings.hideUnregisteredChangeListener);
-            GM_addValueChangeListener('sinner.useHighlighting', Settings.useHighlightingChangeListener);
-            GM_addValueChangeListener('sinner.useHiding', Settings.useHidingChangeListener);
-            GM_addValueChangeListener('sinner.transformAnchors', Settings.transformAnchorsChangeListener);
-            GM_addValueChangeListener('sinner.transformAvatars', Settings.transformAvatarsChangeListener);
+            GM_addValueChangeListener('sinner.enforceDomain', Events.Config.enforceDomainChangeListener);
+            GM_addValueChangeListener('sinner.hideDeleted', Events.Config.hideDeletedChangeListener);
+            GM_addValueChangeListener('sinner.hideUnregistered', Events.Config.hideUnregisteredChangeListener);
+            GM_addValueChangeListener('sinner.highlightColor', Events.Config.highlightColorChangeListener);
+            GM_addValueChangeListener('sinner.useHiding', Events.Config.useHidingChangeListener);
+            GM_addValueChangeListener('sinner.useHighlighting', Events.Config.useHighlightingChangeListener);
+            GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
+            GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
+            GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
         }
 
         modal(e) {
@@ -1178,46 +1207,67 @@ sinner(function () {
 
             if (typeof settingsModal === 'undefined') {
                 Settings.initializeModal();
-                db.on('changes', Settings.observableListener);
             }
 
             settingsModal.open();
         }
 
-        observableListener(changes) {
-            changes.forEach(function (change) {
-                if (change.table !== 'idioms') {
-                    return;
-                }
-
-                page.process();
-            });
-        }
-
-        async hideDeleted() {
-        }
-
-        async showDeleted() {
-        }
-
-        async processUsers() {
-        }
-
-        async processWords() {
+        async process() {
+            this.processNicks();
+            this.processTexts();
+            this.processDeleted();
+            this.processAvatars();
+            this.processAnchors();
         }
 
         processAnchors() {
-            Utils.Dom.transformAnchorTargets();
+            if (config.transformAnchors) {
+                Utils.Dom.transformAnchorTargets();
+            }
         }
 
         processAvatars() {
         }
 
-        async process() {
-            this.processUsers();
-            this.processWords();
-            this.processAnchors();
-            this.processAvatars();
+        processDeleted() {
+
+        }
+
+        async processNicks() {
+        }
+
+        async processTexts() {
+        }
+
+        reset() {
+            this.resetDeleted();
+            this.resetNicks();
+            this.resetTexts();
+            this.resetAnchors();
+            this.resetAvatars();
+        }
+
+        resetAnchors() {
+            document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
+                link.target = '_blank';
+                link.classList.remove('transformedAnchor');
+            });
+        }
+
+        resetAvatars() {
+
+        }
+
+        resetDeleted() {
+
+        }
+
+        resetNicks() {
+
+        }
+
+        resetTexts() {
+
         }
     }
 
@@ -1248,11 +1298,9 @@ sinner(function () {
             menu.appendChild(a);
         }
 
-        async processUsers() {
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
 
             document.querySelectorAll('li.c4, li.c4u').forEach(function (el) {
                 let index = el.innerText.indexOf('('),
@@ -1271,15 +1319,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
                 let hidden = false,
@@ -1296,10 +1338,49 @@ sinner(function () {
                 }
             });
         }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+        }
     }
 
     class PostPage extends Page {
-        async processUsers() {
+        async process() {
+            if (document.querySelector('.infoctext')) {
+                return;
+            }
+
+            super.process();
+        }
+
+        async processDeleted() {
+            if (!config.hideDeleted) {
+                return;
+            }
+
+            document.querySelectorAll('td.infortext').forEach(function (deleted) {
+                let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
+                    previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
+
+                if (previousContent.length === 0) {
+                    toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
+                }
+
+                toHide.forEach(function (el) {
+                    el.classList.add('hiddenDeleted');
+                });
+            });
+        }
+
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('span.signunreg, span.signnick'),
@@ -1312,13 +1393,6 @@ sinner(function () {
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             if (config.useHighlighting && highlight.includes(nick)) {
                 if (!parent.classList.contains('highlightUser')) {
@@ -1379,7 +1453,7 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 header = document.querySelector('td.confheader'),
@@ -1387,15 +1461,6 @@ sinner(function () {
                 content = headers[0],
                 authorInfo = headers[1].querySelectorAll('td.signinfo')[1],
                 wrapped;
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.strikeWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             if (config.useHiding) {
                 if ((wrapped = Utils.String.wrapAll(header, hide, 'strikeWord')) !== false) {
@@ -1447,38 +1512,53 @@ sinner(function () {
             });
         }
 
-        async hideDeleted() {
-            document.querySelectorAll('td.infortext').forEach(function (deleted) {
-                let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
-                    previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
-
-                if (previousContent.length === 0) {
-                    toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
-                }
-
-                toHide.forEach(function (el) {
-                    el.classList.add('hiddenDeleted');
-                });
-            });
-        }
-
-        async showDeleted() {
+        async resetDeleted() {
             document.querySelectorAll('tr.hiddenDeleted').forEach(function (el) {
                 el.classList.remove('hiddenDeleted');
             });
         }
 
-        async process() {
-            super.process();
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
-            if (config.hideDeleted) {
-                this.hideDeleted();
-            }
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.strikeWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
         }
     }
 
     class ProfilePage extends Page {
-        async processUsers() {
+        processAvatars() {
+            let info = document.querySelector('table.infoltext tbody'),
+                wwwContainer = info.children[info.children.length - 5];
+
+            // Fixes ugly design effect of long URL in the table cell refs #13
+            wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
+
+            if (!config.transformAvatars) {
+                return;
+            }
+
+            let www = wwwContainer.innerText.trim().slice(13).trim(),
+                container = document.querySelector('td.photo');
+
+            Utils.Dom.replaceAvatar(container, www);
+        }
+
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('td.profheader'),
@@ -1489,13 +1569,6 @@ sinner(function () {
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             if (config.useHighlighting && highlight.includes(nick)) {
                 if (!parent.classList.contains('highlightUser')) {
@@ -1542,15 +1615,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 let hidden = false,
@@ -1568,44 +1635,40 @@ sinner(function () {
             });
         }
 
-        processAvatars() {
-            let info = document.querySelector('table.infoltext tbody'),
-                wwwContainer = info.children[info.children.length - 5],
-                www = wwwContainer.innerText.trim().slice(13).trim(),
-                container = document.querySelector('td.photo'),
-                avatar = document.querySelector('img.avatar');
-
-            // Fixes ugly design effect of long URL in the table cell refs #13
-            wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
-
-            if (avatar !== null) {
-                let avatarContainer = avatar.parentElement.parentElement,
-                    photo = avatarContainer.querySelector('img.transformedAvatar');
-
-                avatar.parentElement.remove();
+        resetAvatars() {
+            document.querySelectorAll('img.avatar').forEach(function (avatar) {
+                let photo = avatar.parentElement.parentElement.querySelector('img.transformedAvatar');
 
                 if (photo !== null) {
                     photo.classList.remove('transformedAvatar');
                 }
-            }
 
-            if (config.transformAvatars) {
-                Utils.Dom.replaceAvatar(container, www);
-            }
+                avatar.parentElement.remove();
+            });
+        }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
         }
     }
 
     class BookPage extends Page {
-        async processUsers() {
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
                 let isRegistered = el.innerText.indexOf('(') === -1,
@@ -1638,16 +1701,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.hiddenWord').forEach(function (rel) {
-                rel.classList.remove('hiddenWord');
-            });
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 let hidden = false,
@@ -1664,17 +1720,48 @@ sinner(function () {
                 }
             });
         }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.hiddenWord').forEach(function (el) {
+                el.classList.remove('hiddenWord');
+            });
+        }
     }
 
     class StatsPage extends Page {
-        async processUsers(skip) {
+        resetNicks() {
+            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
+        }
+
+        resetTexts() {
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.hiddenWord').forEach(function (el) {
+                el.classList.remove('hiddenWord');
+            });
+        }
+
+        async processNicks(skip) {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 index = 0;
 
             skip = skip || 0;
-
-            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
 
             document.querySelectorAll('td.lstconf').forEach(function (el) {
                 if (index++ < skip) {
@@ -1695,19 +1782,12 @@ sinner(function () {
             });
         }
 
-        async processWords(count) {
+        async processTexts(count) {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 index = 0;
 
             count = count || 0;
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.hiddenWord').forEach(function (rel) {
-                rel.classList.remove('hiddenWord');
-            });
 
             document.querySelectorAll('td.lstconf').forEach(function (el) {
                 let hidden = false,
@@ -1732,24 +1812,25 @@ sinner(function () {
         async process() {
             switch (window.location.search) {
                 case '?prehled=4':
-                    this.processUsers();
+                    this.processNicks();
                     break;
                 case '?prehled=3':
-                    this.processUsers(40);
-                    this.processWords(40);
+                    this.processNicks(40);
+                    this.processTexts(40);
                     break;
                 case '?prehled=2':
-                    this.processUsers(20);
-                    this.processWords(20);
+                    this.processNicks(20);
+                    this.processTexts(20);
                     break;
                 case '?prehled=1':
                 default:
-                    this.processWords();
+                    this.processTexts();
                     break;
             }
 
-            this.processAnchors();
+            this.processDeleted();
             this.processAvatars();
+            this.processAnchors();
         }
     }
 
