@@ -27,8 +27,6 @@ function sinner(callback) {
 
 sinner(function () {
     let db,
-        page,
-        settingsModal,
         gettext = (function () {
             let gettext = i18n(),
                 lang = window.location.hostname.match(/^(www\.)?spovednica\.sk$/) ? 'sk' : 'cz';
@@ -37,24 +35,32 @@ sinner(function () {
             gettext.setLocale(lang);
 
             return gettext;
-        })();
+        })(),
+        page,
+        settingsModal;
 
     const config = {
             color: GM_getValue('sinner.highlightColor', '#ff0000'),
             domain: GM_getValue('sinner.enforceDomain', '.'),
-            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
-            hideDeleted: GM_getValue('sinner.hideDeleted', false),
-            hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
-            useHighlighting: GM_getValue('sinner.useHighlighting', true),
-            useHiding: GM_getValue('sinner.useHiding', true),
-            transformAnchors: GM_getValue('sinner.transformAnchors', false),
-            transformAvatars: GM_getValue('sinner.transformAvatars', false),
             domains: new Map([
                 ['.', gettext.__('-- do not use --')],
                 ['www.zpovednice.eu', 'www.zpovednice.eu'],
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
+            hideDeleted: GM_getValue('sinner.hideDeleted', false),
+            hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
+            questions: new Map([
+                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
+                ['ul#hideUser', gettext.__('Really delete hidden user?')],
+                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
+                ['ul#hideWord', gettext.__('Really delete hidden term?')]
+            ]),
+            transformAnchors: GM_getValue('sinner.transformAnchors', false),
+            transformAvatars: GM_getValue('sinner.transformAvatars', false),
+            useHiding: GM_getValue('sinner.useHiding', true),
+            useHighlighting: GM_getValue('sinner.useHighlighting', true),
+            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
             youtubeThumbnails: new Map([
                 [0, {
                     label: gettext.__('-- none --')
@@ -87,12 +93,6 @@ sinner(function () {
                     height: 360,
                     pattern: 'https://img.youtube.com/vi/[id]/hqdefault.jpg'
                 }]
-            ]),
-            questions: new Map([
-                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
-                ['ul#hideUser', gettext.__('Really delete hidden user?')],
-                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
-                ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ])
         },
         cssRules = new Map([
@@ -129,6 +129,116 @@ sinner(function () {
                 index: 3
             }]
         ]),
+        Events = {
+            Config: {
+                highlightColorChangeListener: function (key, old_value, new_value, remote) {
+                    config.color = new_value;
+
+                    Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('postHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
+                    Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
+
+                    if (typeof settingsModal !== 'undefined' && remote) {
+                        document.getElementById('colorPicker').value = config.color;
+                    }
+                },
+                enforceDomainChangeListener: function (key, old_value, new_value, remote) {
+                    Settings.enforceDomain(new_value);
+                },
+                hideDeletedChangeListener: function (key, old_value, new_value, remote) {
+                    config.hideDeleted = new_value;
+                    page.resetDeleted();
+                    page.processDeleted();
+                },
+                hideUnregisteredChangeListener: function (key, old_value, new_value, remote) {
+                    config.hideUnregistered = new_value;
+                    page.resetNicks();
+                    page.processNicks();
+                },
+                transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
+                    config.transformAnchors = new_value;
+                    page.resetAnchors();
+                    page.processAnchors();
+                },
+                transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
+                    config.transformAvatars = new_value;
+                    page.resetAvatars();
+                    page.processAvatars();
+                },
+                useHidingChangeListener: function (key, old_value, new_value, remote) {
+                    config.useHiding = new_value;
+                    page.resetNicks();
+                    page.resetTexts();
+                    page.processNicks();
+                    page.processTexts();
+                },
+                useHighlightingChangeListener: function (key, old_value, new_value, remote) {
+                    config.useHighlighting = new_value;
+                    page.resetNicks();
+                    page.resetTexts();
+                    page.processNicks();
+                    page.processTexts();
+                },
+                youtubeThumbnailChangeListener: function (key, old_value, new_value, remote) {
+                    config.youtubeThumbnail = new_value;
+                    page.resetTexts();
+                    page.processTexts();
+                }
+            },
+            Modal: {
+                observableListener: function (changes) {
+                    changes.forEach(function (change) {
+                        if (change.table !== 'idioms') {
+                            return;
+                        }
+
+                        switch (change.type) {
+                            case 1:
+                                Settings.appendItem(change.obj);
+                                break;
+                            case 2:
+                                if (typeof change.mods.highlight === 'undefined') {
+                                    return;
+                                }
+
+                                let append = Object.assign(change.obj, {
+                                    highlight: change.mods.highlight
+                                });
+
+                                Settings.removeItem(change.obj);
+                                Settings.appendItem(append);
+                                break;
+                            case 3:
+                                Settings.removeItem(change.oldObj);
+                                break;
+                        }
+                    });
+                }
+            },
+            Page: {
+                observableListener(changes) {
+                    changes.forEach(function (change) {
+                        if (change.table !== 'idioms') {
+                            return;
+                        }
+
+                        let subject = typeof change.oldObj === 'undefined' ? change.obj.subject : change.oldObj.subject;
+
+                        switch (subject) {
+                            case 'user':
+                                page.resetNicks();
+                                page.processNicks();
+                                break;
+                            case 'word':
+                                page.resetTexts();
+                                page.processTexts();
+                                break;
+                        }
+                    });
+                }
+            }
+        },
         Utils = {
             Css: {
                 initializeStylesheet: function () {
@@ -311,17 +421,10 @@ sinner(function () {
                     }
                 },
                 transformAnchorTargets: function () {
-                    if (config.transformAnchors) {
-                        document.querySelectorAll("a[target='_blank']").forEach(function (link) {
-                            link.classList.add('transformedAnchor');
-                            link.removeAttribute('target');
-                        });
-                    } else {
-                        document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
-                            link.target = '_blank';
-                            link.classList.remove('transformedAnchor');
-                        });
-                    }
+                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                        link.classList.add('transformedAnchor');
+                        link.removeAttribute('target');
+                    });
                 },
                 replaceAvatar: function (container, src) {
                     if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
@@ -593,18 +696,6 @@ sinner(function () {
                     console.error(err);
                 });
             },
-            colorChangeListener: function (key, old_value, new_value, remote) {
-                config.color = new_value;
-
-                Utils.Css.setStyle('homeHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('postHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
-                Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
-
-                if (typeof settingsModal !== 'undefined' && remote) {
-                    document.getElementById('colorPicker').value = config.color;
-                }
-            },
             enforceDomain: function (hostname) {
                 if (window.location.hostname === hostname || hostname === '.' || !config.domains.has(hostname)) {
                     return;
@@ -615,42 +706,6 @@ sinner(function () {
                     window.location.pathname + window.location.search + window.location.hash;
 
                 window.location.assign(location);
-            },
-            domainChangeListener: function (key, old_value, new_value, remote) {
-                Settings.enforceDomain(new_value);
-            },
-            youtubeThumbnailChangeListener: function (key, old_value, new_value, remote) {
-                config.youtubeThumbnail = new_value;
-                page.process();
-            },
-            hideDeletedChangeListener: function (key, old_value, new_value, remote) {
-                config.hideDeleted = new_value;
-
-                if (new_value) {
-                    page.hideDeleted();
-                } else {
-                    page.showDeleted();
-                }
-            },
-            hideUnregisteredChangeListener: function (key, old_value, new_value, remote) {
-                config.hideUnregistered = new_value;
-                page.process();
-            },
-            useHighlightingChangeListener: function (key, old_value, new_value, remote) {
-                config.useHighlighting = new_value;
-                page.process();
-            },
-            useHidingChangeListener: function (key, old_value, new_value, remote) {
-                config.useHiding = new_value;
-                page.process();
-            },
-            transformAnchorsChangeListener: function (key, old_value, new_value, remote) {
-                config.transformAnchors = new_value;
-                Utils.Dom.transformAnchorTargets();
-            },
-            transformAvatarsChangeListener: function (key, old_value, new_value, remote) {
-                config.transformAvatars = new_value;
-                page.processAvatars();
             },
             showRecords: function (subject, highlight) {
                 db.idioms.where({subject: subject, highlight: highlight}).each(function (item) {
@@ -697,34 +752,6 @@ sinner(function () {
                 }).then(function (uuid) {
                 }).catch(function (err) {
                     console.error(err);
-                });
-            },
-            observableListener: function (changes) {
-                changes.forEach(function (change) {
-                    if (change.table !== 'idioms') {
-                        return;
-                    }
-
-                    switch (change.type) {
-                        case 1:
-                            Settings.appendItem(change.obj);
-                            break;
-                        case 2:
-                            if (typeof change.mods.highlight === 'undefined') {
-                                return;
-                            }
-
-                            let append = Object.assign(change.obj, {
-                                highlight: change.mods.highlight
-                            });
-
-                            Settings.removeItem(change.obj);
-                            Settings.appendItem(append);
-                            break;
-                        case 3:
-                            Settings.removeItem(change.oldObj);
-                            break;
-                    }
                 });
             },
             backup: function () {
@@ -1147,6 +1174,7 @@ sinner(function () {
                 document.getElementById('colorPicker').addEventListener('change', function (e) {
                     GM_setValue('sinner.highlightColor', e.target.value)
                 });
+                db.on('changes', Events.Modal.observableListener);
 
                 settingsModal.tabs = new Tabby('[data-tabs]');
             }
@@ -1160,17 +1188,17 @@ sinner(function () {
         initialize() {
             db = Utils.Db.initialize();
 
-            db.on('changes', this.observableListener);
+            db.on('changes', Events.Page.observableListener);
 
-            GM_addValueChangeListener('sinner.highlightColor', Settings.colorChangeListener);
-            GM_addValueChangeListener('sinner.enforceDomain', Settings.domainChangeListener);
-            GM_addValueChangeListener('sinner.youtubeThumbnail', Settings.youtubeThumbnailChangeListener);
-            GM_addValueChangeListener('sinner.hideDeleted', Settings.hideDeletedChangeListener);
-            GM_addValueChangeListener('sinner.hideUnregistered', Settings.hideUnregisteredChangeListener);
-            GM_addValueChangeListener('sinner.useHighlighting', Settings.useHighlightingChangeListener);
-            GM_addValueChangeListener('sinner.useHiding', Settings.useHidingChangeListener);
-            GM_addValueChangeListener('sinner.transformAnchors', Settings.transformAnchorsChangeListener);
-            GM_addValueChangeListener('sinner.transformAvatars', Settings.transformAvatarsChangeListener);
+            GM_addValueChangeListener('sinner.enforceDomain', Events.Config.enforceDomainChangeListener);
+            GM_addValueChangeListener('sinner.hideDeleted', Events.Config.hideDeletedChangeListener);
+            GM_addValueChangeListener('sinner.hideUnregistered', Events.Config.hideUnregisteredChangeListener);
+            GM_addValueChangeListener('sinner.highlightColor', Events.Config.highlightColorChangeListener);
+            GM_addValueChangeListener('sinner.useHiding', Events.Config.useHidingChangeListener);
+            GM_addValueChangeListener('sinner.useHighlighting', Events.Config.useHighlightingChangeListener);
+            GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
+            GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
+            GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
         }
 
         modal(e) {
@@ -1178,46 +1206,67 @@ sinner(function () {
 
             if (typeof settingsModal === 'undefined') {
                 Settings.initializeModal();
-                db.on('changes', Settings.observableListener);
             }
 
             settingsModal.open();
         }
 
-        observableListener(changes) {
-            changes.forEach(function (change) {
-                if (change.table !== 'idioms') {
-                    return;
-                }
-
-                page.process();
-            });
-        }
-
-        async hideDeleted() {
-        }
-
-        async showDeleted() {
-        }
-
-        async processUsers() {
-        }
-
-        async processWords() {
+        async process() {
+            this.processNicks();
+            this.processTexts();
+            this.processDeleted();
+            this.processAvatars();
+            this.processAnchors();
         }
 
         processAnchors() {
-            Utils.Dom.transformAnchorTargets();
+            if (config.transformAnchors) {
+                Utils.Dom.transformAnchorTargets();
+            }
         }
 
         processAvatars() {
         }
 
-        async process() {
-            this.processUsers();
-            this.processWords();
-            this.processAnchors();
-            this.processAvatars();
+        processDeleted() {
+
+        }
+
+        async processNicks() {
+        }
+
+        async processTexts() {
+        }
+
+        reset() {
+            this.resetDeleted();
+            this.resetNicks();
+            this.resetTexts();
+            this.resetAnchors();
+            this.resetAvatars();
+        }
+
+        resetAnchors() {
+            document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
+                link.target = '_blank';
+                link.classList.remove('transformedAnchor');
+            });
+        }
+
+        resetAvatars() {
+
+        }
+
+        resetDeleted() {
+
+        }
+
+        resetNicks() {
+
+        }
+
+        resetTexts() {
+
         }
     }
 
@@ -1248,11 +1297,9 @@ sinner(function () {
             menu.appendChild(a);
         }
 
-        async processUsers() {
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
 
             document.querySelectorAll('li.c4, li.c4u').forEach(function (el) {
                 let index = el.innerText.indexOf('('),
@@ -1271,15 +1318,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
                 let hidden = false,
@@ -1296,10 +1337,41 @@ sinner(function () {
                 }
             });
         }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+        }
     }
 
     class PostPage extends Page {
-        async processUsers() {
+        async processDeleted() {
+            if (!config.hideDeleted) {
+                return;
+            }
+
+            document.querySelectorAll('td.infortext').forEach(function (deleted) {
+                let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
+                    previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
+
+                if (previousContent.length === 0) {
+                    toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
+                }
+
+                toHide.forEach(function (el) {
+                    el.classList.add('hiddenDeleted');
+                });
+            });
+        }
+
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('span.signunreg, span.signnick'),
@@ -1312,13 +1384,6 @@ sinner(function () {
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             if (config.useHighlighting && highlight.includes(nick)) {
                 if (!parent.classList.contains('highlightUser')) {
@@ -1379,7 +1444,7 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 header = document.querySelector('td.confheader'),
@@ -1387,15 +1452,6 @@ sinner(function () {
                 content = headers[0],
                 authorInfo = headers[1].querySelectorAll('td.signinfo')[1],
                 wrapped;
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.strikeWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             if (config.useHiding) {
                 if ((wrapped = Utils.String.wrapAll(header, hide, 'strikeWord')) !== false) {
@@ -1447,38 +1503,53 @@ sinner(function () {
             });
         }
 
-        async hideDeleted() {
-            document.querySelectorAll('td.infortext').forEach(function (deleted) {
-                let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
-                    previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
-
-                if (previousContent.length === 0) {
-                    toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
-                }
-
-                toHide.forEach(function (el) {
-                    el.classList.add('hiddenDeleted');
-                });
-            });
-        }
-
-        async showDeleted() {
+        async resetDeleted() {
             document.querySelectorAll('tr.hiddenDeleted').forEach(function (el) {
                 el.classList.remove('hiddenDeleted');
             });
         }
 
-        async process() {
-            super.process();
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
 
-            if (config.hideDeleted) {
-                this.hideDeleted();
-            }
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.strikeWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
         }
     }
 
     class ProfilePage extends Page {
-        async processUsers() {
+        processAvatars() {
+            let info = document.querySelector('table.infoltext tbody'),
+                wwwContainer = info.children[info.children.length - 5];
+
+            // Fixes ugly design effect of long URL in the table cell refs #13
+            wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
+
+            if (!config.transformAvatars) {
+                return;
+            }
+
+            let www = wwwContainer.innerText.trim().slice(13).trim(),
+                container = document.querySelector('td.photo');
+
+            Utils.Dom.replaceAvatar(container, www);
+        }
+
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('td.profheader'),
@@ -1489,13 +1560,6 @@ sinner(function () {
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             if (config.useHighlighting && highlight.includes(nick)) {
                 if (!parent.classList.contains('highlightUser')) {
@@ -1542,15 +1606,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 let hidden = false,
@@ -1568,44 +1626,40 @@ sinner(function () {
             });
         }
 
-        processAvatars() {
-            let info = document.querySelector('table.infoltext tbody'),
-                wwwContainer = info.children[info.children.length - 5],
-                www = wwwContainer.innerText.trim().slice(13).trim(),
-                container = document.querySelector('td.photo'),
-                avatar = document.querySelector('img.avatar');
-
-            // Fixes ugly design effect of long URL in the table cell refs #13
-            wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
-
-            if (avatar !== null) {
-                let avatarContainer = avatar.parentElement.parentElement,
-                    photo = avatarContainer.querySelector('img.transformedAvatar');
-
-                avatar.parentElement.remove();
+        resetAvatars() {
+            document.querySelectorAll('img.avatar').forEach(function (avatar) {
+                let photo = avatar.parentElement.parentElement.querySelector('img.transformedAvatar');
 
                 if (photo !== null) {
                     photo.classList.remove('transformedAvatar');
                 }
-            }
 
-            if (config.transformAvatars) {
-                Utils.Dom.replaceAvatar(container, www);
-            }
+                avatar.parentElement.remove();
+            });
+        }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            Utils.Css.removeClass('hiddenWord');
+
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
         }
     }
 
     class BookPage extends Page {
-        async processUsers() {
+        async processNicks() {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
-
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (rel) {
-                Utils.Dom.removeAllChildNodes(rel);
-                rel.remove();
-            });
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
                 let isRegistered = el.innerText.indexOf('(') === -1,
@@ -1638,16 +1692,9 @@ sinner(function () {
             });
         }
 
-        async processWords() {
+        async processTexts() {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.hiddenWord').forEach(function (rel) {
-                rel.classList.remove('hiddenWord');
-            });
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 let hidden = false,
@@ -1664,17 +1711,48 @@ sinner(function () {
                 }
             });
         }
+
+        resetNicks() {
+            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
+        }
+
+        resetTexts() {
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.hiddenWord').forEach(function (el) {
+                el.classList.remove('hiddenWord');
+            });
+        }
     }
 
     class StatsPage extends Page {
-        async processUsers(skip) {
+        resetNicks() {
+            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
+        }
+
+        resetTexts() {
+            document.querySelectorAll('.highlightWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+
+            document.querySelectorAll('.hiddenWord').forEach(function (el) {
+                el.classList.remove('hiddenWord');
+            });
+        }
+
+        async processNicks(skip) {
             let highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 index = 0;
 
             skip = skip || 0;
-
-            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
 
             document.querySelectorAll('td.lstconf').forEach(function (el) {
                 if (index++ < skip) {
@@ -1695,19 +1773,12 @@ sinner(function () {
             });
         }
 
-        async processWords(count) {
+        async processTexts(count) {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 index = 0;
 
             count = count || 0;
-
-            document.querySelectorAll('.highlightWord').forEach(function (rel) {
-                Utils.String.unwrap(rel);
-            });
-            document.querySelectorAll('.hiddenWord').forEach(function (rel) {
-                rel.classList.remove('hiddenWord');
-            });
 
             document.querySelectorAll('td.lstconf').forEach(function (el) {
                 let hidden = false,
@@ -1732,24 +1803,25 @@ sinner(function () {
         async process() {
             switch (window.location.search) {
                 case '?prehled=4':
-                    this.processUsers();
+                    this.processNicks();
                     break;
                 case '?prehled=3':
-                    this.processUsers(40);
-                    this.processWords(40);
+                    this.processNicks(40);
+                    this.processTexts(40);
                     break;
                 case '?prehled=2':
-                    this.processUsers(20);
-                    this.processWords(20);
+                    this.processNicks(20);
+                    this.processTexts(20);
                     break;
                 case '?prehled=1':
                 default:
-                    this.processWords();
+                    this.processTexts();
                     break;
             }
 
-            this.processAnchors();
+            this.processDeleted();
             this.processAvatars();
+            this.processAnchors();
         }
     }
 
