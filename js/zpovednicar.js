@@ -821,8 +821,8 @@ sinner(function () {
 
                 let modalContent =
                     '<ul data-tabs>' +
-                    '<li><a data-tabby-default href="#tabHighlight">' + gettext.__('Highlight') + '</a></li>' +
-                    '<li><a href="#tabHide">' + gettext.__('Hide') + '</a></li>' +
+                    '<li><a data-tabby-default href="#tabHighlight"><img src="/grafika/s3.gif" width="15" height="15">&nbsp;' + gettext.__('Highlight') + '</a></li>' +
+                    '<li><a href="#tabHide"><img src="/grafika/s8.gif" width="15" height="15">&nbsp;' + gettext.__('Hide') + '</a></li>' +
                     '<li><a href="#tabSettings">' + gettext.__('Settings') + '</a></li>' +
                     '</ul>' +
                     '<div id="tabHighlight">' +
@@ -876,6 +876,7 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
+                    '<img src="/grafika/s17.gif" width="15" height="15">&nbsp;' +
                     gettext.__('Hide deleted') +
                     ':' +
                     '</div>' +
@@ -889,6 +890,7 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
+                    '<img src="/grafika/s7.gif" width="15" height="15">&nbsp;' +
                     gettext.__('Hide unregistered') +
                     ':</p>' +
                     '</div>' +
