@@ -134,15 +134,18 @@ sinner(function () {
                 enforceDomainChangeListener: function (key, old_value, new_value, remote) {
                     Settings.enforceDomain(new_value);
                 },
-                hideDeletedChangeListener: function (key, old_value, new_value, remote) {
+                hideDeletedChangeListener: async function (key, old_value, new_value, remote) {
                     config.hideDeleted = new_value;
                     page.resetDeleted();
-                    page.processDeleted();
+                    await page.processDeleted();
+                    page.displayCounters();
                 },
-                hideUnregisteredChangeListener: function (key, old_value, new_value, remote) {
+                hideUnregisteredChangeListener: async function (key, old_value, new_value, remote) {
                     config.hideUnregistered = new_value;
                     page.resetNicks();
-                    page.processNicks();
+                    page.resetUnregistered();
+                    await page.processNicks();
+                    page.displayCounters();
                 },
                 highlightColorChangeListener: function (key, old_value, new_value, remote) {
                     config.color = new_value;
@@ -166,24 +169,29 @@ sinner(function () {
                     page.resetAvatars();
                     page.processAvatars();
                 },
-                useHidingChangeListener: function (key, old_value, new_value, remote) {
+                useHidingChangeListener: async function (key, old_value, new_value, remote) {
                     config.useHiding = new_value;
                     page.resetNicks();
+                    page.resetUnregistered();
                     page.resetTexts();
-                    page.processNicks();
-                    page.processTexts();
+                    await page.processNicks();
+                    await page.processTexts();
+                    page.displayCounters();
                 },
-                useHighlightingChangeListener: function (key, old_value, new_value, remote) {
+                useHighlightingChangeListener: async function (key, old_value, new_value, remote) {
                     config.useHighlighting = new_value;
                     page.resetNicks();
+                    page.resetUnregistered();
                     page.resetTexts();
-                    page.processNicks();
-                    page.processTexts();
+                    await page.processNicks();
+                    await page.processTexts();
+                    page.displayCounters();
                 },
-                youtubeThumbnailChangeListener: function (key, old_value, new_value, remote) {
+                youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
                     config.youtubeThumbnail = new_value;
                     page.resetTexts();
-                    page.processTexts();
+                    await page.processTexts();
+                    page.displayCounters();
                 }
             },
             Modal: {
@@ -222,7 +230,7 @@ sinner(function () {
             },
             Page: {
                 observableListener(changes) {
-                    changes.forEach(function (change) {
+                    changes.forEach(async function (change) {
                         if (change.table !== 'idioms') {
                             return;
                         }
@@ -232,11 +240,14 @@ sinner(function () {
                         switch (subject) {
                             case 'user':
                                 page.resetNicks();
-                                page.processNicks();
+                                page.resetUnregistered();
+                                await page.processNicks();
+                                page.displayCounters();
                                 break;
                             case 'word':
                                 page.resetTexts();
-                                page.processTexts();
+                                await page.processTexts();
+                                page.displayCounters();
                                 break;
                         }
                     });
@@ -460,7 +471,7 @@ sinner(function () {
                     container.appendChild(link);
                 },
                 transformAnchorTargets: function () {
-                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                    document.querySelectorAll("a[target='_blank'], area[target='_blank']").forEach(function (link) {
                         link.classList.add('transformedAnchor');
                         link.removeAttribute('target');
                     });
@@ -810,8 +821,8 @@ sinner(function () {
 
                 let modalContent =
                     '<ul data-tabs>' +
-                    '<li><a data-tabby-default href="#tabHighlight">' + gettext.__('Highlight') + '</a></li>' +
-                    '<li><a href="#tabHide">' + gettext.__('Hide') + '</a></li>' +
+                    '<li><a data-tabby-default href="#tabHighlight"><img src="/grafika/s3.gif" width="15" height="15">&nbsp;' + gettext.__('Highlight') + '</a></li>' +
+                    '<li><a href="#tabHide"><img src="/grafika/s8.gif" width="15" height="15">&nbsp;' + gettext.__('Hide') + '</a></li>' +
                     '<li><a href="#tabSettings">' + gettext.__('Settings') + '</a></li>' +
                     '</ul>' +
                     '<div id="tabHighlight">' +
@@ -865,6 +876,7 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
+                    '<img src="/grafika/s17.gif" width="15" height="15">&nbsp;' +
                     gettext.__('Hide deleted') +
                     ':' +
                     '</div>' +
@@ -878,6 +890,7 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
+                    '<img src="/grafika/s7.gif" width="15" height="15">&nbsp;' +
                     gettext.__('Hide unregistered') +
                     ':</p>' +
                     '</div>' +
@@ -1183,7 +1196,85 @@ sinner(function () {
 
     class Page {
         constructor() {
+            this.counterDeleted = 0;
+            this.counterUnregistered = 0;
+            this.counterNicks = 0;
+            this.counterWords = 0;
+            this.countersContainer = 'countersContainer';
+
             this.initialize();
+        }
+
+        displayCounters() {
+            let self = this,
+                container = document.getElementById(this.countersContainer),
+                links = new Map([
+                    ['counterWords', {
+                        action: 'resetTexts',
+                        icon: '/grafika/s10.gif',
+                        singular: 'Hidden word: %1',
+                        plural: 'Hidden words: %1'
+                    }],
+                    ['counterNicks', {
+                        action: 'resetNicks',
+                        icon: '/grafika/s8.gif',
+                        singular: 'Hidden nick: %1',
+                        plural: 'Hidden nicks: %1'
+                    }],
+                    ['counterUnregistered', {
+                        action: 'resetUnregistered',
+                        icon: '/grafika/s7.gif',
+                        singular: 'Hidden unregistered nick: %1',
+                        plural: 'Hidden unregistered nicks: %1'
+                    }],
+                    ['counterDeleted', {
+                        action: 'resetDeleted',
+                        icon: '/grafika/s17.gif',
+                        singular: 'Hidden deleted record: %1',
+                        plural: 'Hidden deleted records: %1'
+                    }]
+                ]);
+
+            links.forEach(function (options, id) {
+                let el = document.getElementById(id),
+                    counter = self[id];
+
+                if (el !== null) {
+                    el.remove();
+                }
+
+                if (counter > 0) {
+                    let title = gettext._n(options.singular, options.plural, counter),
+                        link = Object.assign(document.createElement('a'), {
+                            id: id,
+                            className: 'counter',
+                            href: '#',
+                            title: title
+                        }),
+                        span = document.createElement('span'),
+                        icon = Object.assign(document.createElement('img'), {
+                            src: options.icon,
+                            width: 19,
+                            height: 19,
+                            border: 0,
+                            align: 'bottom',
+                            alt: title
+                        });
+
+                    span.appendChild(icon);
+                    span.insertAdjacentHTML('beforeend', '&nbsp;' + counter + '&nbsp;');
+                    link.appendChild(span);
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.remove();
+                        self[options.action](true);
+                        self.displayCounters();
+                    });
+
+                    container.prepend(link);
+                }
+            });
         }
 
         initialize() {
@@ -1213,11 +1304,12 @@ sinner(function () {
         }
 
         async process() {
-            this.processNicks();
-            this.processTexts();
+            await this.processNicks();
+            await this.processTexts();
             this.processDeleted();
             this.processAvatars();
             this.processAnchors();
+            this.displayCounters();
         }
 
         processAnchors() {
@@ -1230,7 +1322,6 @@ sinner(function () {
         }
 
         processDeleted() {
-
         }
 
         async processNicks() {
@@ -1242,32 +1333,68 @@ sinner(function () {
         reset() {
             this.resetDeleted();
             this.resetNicks();
+            this.resetUnregistered();
             this.resetTexts();
             this.resetAnchors();
             this.resetAvatars();
+            this.displayCounters();
         }
 
         resetAnchors() {
-            document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
+            document.querySelectorAll(".transformedAnchor").forEach(function (link) {
                 link.target = '_blank';
                 link.classList.remove('transformedAnchor');
             });
         }
 
         resetAvatars() {
-
         }
 
         resetDeleted() {
+            this.counterDeleted = 0;
 
+            Utils.Css.removeClass('hiddenDeleted');
         }
 
-        resetNicks() {
+        resetNicks(unhideOnly) {
+            unhideOnly = unhideOnly || false;
 
+            this.counterNicks = 0;
+
+            Utils.Css.removeClass('hiddenUser');
+
+            if (unhideOnly) {
+                return;
+            }
+
+            Utils.Css.removeClass(['highlightUser', 'strikeUser', 'highlightStatsUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
         }
 
-        resetTexts() {
+        resetTexts(unhideOnly) {
+            unhideOnly = unhideOnly || false;
 
+            this.counterWords = 0;
+
+            Utils.Css.removeClass('hiddenWord');
+
+            if (unhideOnly) {
+                return;
+            }
+
+            document.querySelectorAll('.highlightWord, .strikeWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+        }
+
+        resetUnregistered() {
+            this.counterUnregistered = 0;
+
+            Utils.Css.removeClass('unregisteredUser');
         }
     }
 
@@ -1296,10 +1423,15 @@ sinner(function () {
 
             menu.appendChild(br);
             menu.appendChild(a);
+
+            document.querySelector('#ixmidst > div.boxheader > span').id = this.countersContainer;
         }
 
         async processNicks() {
-            let highlight = await Utils.Db.getIdioms('user', true, true),
+            await super.processNicks();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
 
             document.querySelectorAll('li.c4, li.c4u').forEach(function (el) {
@@ -1313,6 +1445,7 @@ sinner(function () {
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
                     if (!el.parentElement.classList.contains('hiddenUser')) {
+                        self.counterNicks++;
                         el.parentElement.classList.add('hiddenUser');
                     }
                 }
@@ -1320,7 +1453,10 @@ sinner(function () {
         }
 
         async processTexts() {
-            let highlight = await Utils.Db.getIdioms('word', true),
+            await super.processTexts();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
@@ -1328,6 +1464,7 @@ sinner(function () {
                     wrapped;
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
+                    self.counterWords++;
                     el.parentElement.parentElement.classList.add('hiddenWord');
                 }
 
@@ -1338,37 +1475,38 @@ sinner(function () {
                 }
             });
         }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-        }
     }
 
     class PostPage extends Page {
+        initialize() {
+            super.initialize();
+
+            let tables = document.querySelectorAll('body > div > table');
+
+            tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+        }
+
         async process() {
             if (document.querySelector('.infoctext')) {
                 return;
             }
 
-            super.process();
+            await super.process();
         }
 
-        async processDeleted() {
+        processDeleted() {
             if (!config.hideDeleted) {
                 return;
             }
 
+            super.processDeleted();
+            let self = this;
+
             document.querySelectorAll('td.infortext').forEach(function (deleted) {
                 let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
                     previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
+
+                self.counterDeleted++;
 
                 if (previousContent.length === 0) {
                     toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
@@ -1381,7 +1519,10 @@ sinner(function () {
         }
 
         async processNicks() {
-            let highlight = await Utils.Db.getIdioms('user', true, true),
+            await super.processNicks();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('span.signunreg, span.signnick'),
                 isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
@@ -1429,9 +1570,11 @@ sinner(function () {
                     && config.hideUnregistered
                     && !isRegistered
                 ) {
+                    self.counterUnregistered++;
+
                     containers.forEach(function (tr) {
-                        if (!tr.classList.contains('hiddenUser')) {
-                            tr.classList.add('hiddenUser');
+                        if (!tr.classList.contains('unregisteredUser')) {
+                            tr.classList.add('unregisteredUser');
                         }
                     });
                 }
@@ -1441,6 +1584,8 @@ sinner(function () {
                         parent.classList.add('highlightUser');
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
+                    self.counterNicks++;
+
                     containers.forEach(function (tr) {
                         if (!tr.classList.contains('hiddenUser')) {
                             tr.classList.add('hiddenUser');
@@ -1454,7 +1599,10 @@ sinner(function () {
         }
 
         async processTexts() {
-            let highlight = await Utils.Db.getIdioms('word', true),
+            await super.processTexts();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 header = document.querySelector('td.confheader'),
                 headers = document.querySelectorAll('td.conftext'),
@@ -1493,6 +1641,8 @@ sinner(function () {
                     hidden = false;
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(textEl, hide)) !== false) {
+                    self.counterWords++;
+
                     toHide.forEach(function (hel) {
                         hel.classList.add('hiddenWord');
                     });
@@ -1511,36 +1661,18 @@ sinner(function () {
                 }
             });
         }
-
-        async resetDeleted() {
-            document.querySelectorAll('tr.hiddenDeleted').forEach(function (el) {
-                el.classList.remove('hiddenDeleted');
-            });
-        }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.strikeWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-        }
     }
 
     class ProfilePage extends Page {
+        initialize() {
+            super.initialize();
+
+            let tables = document.querySelectorAll('body > div > table');
+
+            tables[tables.length === 5 ? 4 : 5]
+                .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+        }
+
         processAvatars() {
             let info = document.querySelector('table.infoltext tbody'),
                 wwwContainer = info.children[info.children.length - 5];
@@ -1559,7 +1691,10 @@ sinner(function () {
         }
 
         async processNicks() {
-            let highlight = await Utils.Db.getIdioms('user', true, true),
+            await super.processNicks();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 el = document.querySelector('td.profheader'),
                 text = el.innerText.trim(),
@@ -1595,8 +1730,9 @@ sinner(function () {
                     });
 
                 if (config.hideUnregistered && !isRegistered) {
-                    if (!parent.classList.contains('hiddenUser')) {
-                        parent.classList.add('hiddenUser');
+                    if (!parent.classList.contains('unregisteredUser')) {
+                        self.counterUnregistered++;
+                        parent.classList.add('unregisteredUser');
                     }
                 }
 
@@ -1606,6 +1742,7 @@ sinner(function () {
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
                     if (!parent.classList.contains('hiddenUser')) {
+                        self.counterNicks++;
                         parent.classList.add('hiddenUser');
                     }
                 }
@@ -1616,7 +1753,10 @@ sinner(function () {
         }
 
         async processTexts() {
-            let highlight = await Utils.Db.getIdioms('word', true),
+            await super.processTexts();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
@@ -1624,6 +1764,7 @@ sinner(function () {
                     wrapped;
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
+                    self.counterWords++;
                     el.parentElement.parentElement.classList.add('hiddenWord');
                 }
 
@@ -1646,28 +1787,22 @@ sinner(function () {
                 avatar.parentElement.remove();
             });
         }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-        }
     }
 
     class BookPage extends Page {
+        initialize() {
+            super.initialize();
+
+            document.querySelectorAll('body > div > table')[3]
+                .querySelectorAll('tbody > tr')[1]
+                .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+        }
+
         async processNicks() {
-            let highlight = await Utils.Db.getIdioms('user', true, true),
+            await super.processNicks();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true);
 
             document.querySelectorAll('span.guestnote, span.guestnick').forEach(function (el) {
@@ -1681,8 +1816,9 @@ sinner(function () {
                     });
 
                 if (config.hideUnregistered && !isRegistered) {
-                    if (!parent.classList.contains('hiddenUser')) {
-                        parent.classList.add('hiddenUser');
+                    if (!parent.classList.contains('unregisteredUser')) {
+                        self.counterUnregistered++;
+                        parent.classList.add('unregisteredUser');
                     }
                 }
 
@@ -1692,6 +1828,7 @@ sinner(function () {
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
                     if (!parent.classList.contains('hiddenUser')) {
+                        self.counterNicks++;
                         parent.classList.add('hiddenUser');
                     }
                 }
@@ -1702,7 +1839,10 @@ sinner(function () {
         }
 
         async processTexts() {
-            let highlight = await Utils.Db.getIdioms('word', true),
+            await super.processTexts();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
@@ -1710,6 +1850,7 @@ sinner(function () {
                     wrapped;
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
+                    self.counterWords++;
                     el.parentElement.parentElement.classList.add('hiddenWord');
                 }
 
@@ -1720,44 +1861,47 @@ sinner(function () {
                 }
             });
         }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-        }
-
-        resetTexts() {
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            document.querySelectorAll('.hiddenWord').forEach(function (el) {
-                el.classList.remove('hiddenWord');
-            });
-        }
     }
 
     class StatsPage extends Page {
-        resetNicks() {
-            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
+        initialize() {
+            super.initialize();
+
+            document.querySelectorAll('body > div > table')[4]
+                .querySelector('tbody > tr')
+                .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
         }
 
-        resetTexts() {
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
+        async process() {
+            switch (window.location.search) {
+                case '?prehled=4':
+                    await this.processNicks();
+                    break;
+                case '?prehled=3':
+                    await this.processNicks(40);
+                    await this.processTexts(40);
+                    break;
+                case '?prehled=2':
+                    await this.processNicks(20);
+                    await this.processTexts(20);
+                    break;
+                case '?prehled=1':
+                default:
+                    await this.processTexts();
+                    break;
+            }
 
-            document.querySelectorAll('.hiddenWord').forEach(function (el) {
-                el.classList.remove('hiddenWord');
-            });
+            this.processDeleted();
+            this.processAvatars();
+            this.processAnchors();
+            this.displayCounters();
         }
 
         async processNicks(skip) {
-            let highlight = await Utils.Db.getIdioms('user', true, true),
+            await super.processNicks();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('user', true, true),
                 hide = await Utils.Db.getIdioms('user', false, true),
                 index = 0;
 
@@ -1776,6 +1920,7 @@ sinner(function () {
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
                     if (!el.parentElement.classList.contains('hiddenUser')) {
+                        self.counterNicks++;
                         el.parentElement.classList.add('hiddenUser');
                     }
                 }
@@ -1783,7 +1928,10 @@ sinner(function () {
         }
 
         async processTexts(count) {
-            let highlight = await Utils.Db.getIdioms('word', true),
+            await super.processTexts();
+
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 index = 0;
 
@@ -1798,6 +1946,7 @@ sinner(function () {
                 }
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
+                    self.counterWords++;
                     el.parentElement.classList.add('hiddenWord');
                 }
 
@@ -1807,30 +1956,6 @@ sinner(function () {
                     }
                 }
             });
-        }
-
-        async process() {
-            switch (window.location.search) {
-                case '?prehled=4':
-                    this.processNicks();
-                    break;
-                case '?prehled=3':
-                    this.processNicks(40);
-                    this.processTexts(40);
-                    break;
-                case '?prehled=2':
-                    this.processNicks(20);
-                    this.processTexts(20);
-                    break;
-                case '?prehled=1':
-                default:
-                    this.processTexts();
-                    break;
-            }
-
-            this.processDeleted();
-            this.processAvatars();
-            this.processAnchors();
         }
     }
 
