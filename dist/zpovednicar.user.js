@@ -2,7 +2,7 @@
 // @name         Zpovědničář
 // @description  Doplňková funkcionalita stránek pro všechny smutné lidičky a pro ty, kdo jim chtějí pomoci
 // @license      http://www.wtfpl.net/about/
-// @version      1.4.1
+// @version      1.5
 // @author       Evžen Huml
 // @supportURL   https://www.zpovednice.eu/profil.php?kdo=71138
 // @homepageURL  https://www.zpovednicar.cz/
@@ -15,7 +15,7 @@
 // @resource     CSS_TABBY  https://cdn.jsdelivr.net/gh/cferdinandi/tabby@12/dist/css/tabby-ui.min.css
 // @resource     CSS_MODAL  https://cdn.zpovednicar.cz/userscripts/css/daypilot-modal-3.16.1.min.css
 // @resource     CSS_PICKER https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css
-// @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/userscripts/css/zpovednicar-1.3.min.css
+// @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/userscripts/css/zpovednicar-1.5.min.css
 // @require      https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js
 // @require      https://cdn.jsdelivr.net/npm/dexie-observable@3.0.0-beta.11/dist/dexie-observable.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/tingle/0.16.0/tingle.min.js
@@ -25,8 +25,8 @@
 // @require      https://cdn.zpovednicar.cz/userscripts/js/FileSaver-2.0.4.min.js
 // @require      https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gettext.js/1.1.1/gettext.iife.min.js
-// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-i18n-1.4.1.min.js
-// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-1.4.1.min.js
+// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-i18n-1.5.min.js
+// @require      https://cdn.zpovednicar.cz/userscripts/js/zpovednicar-1.5.min.js
 // @run-at       document-start
 // @grant        GM_getResourceText
 // @grant        GM_addStyle
