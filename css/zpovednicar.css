@@ -117,3 +117,9 @@ img.transformedAvatar {
 img.avatar {
     object-fit: contain;
 }
+
+#countersContainer a.counter img {
+}
+
+#countersContainer a.counter span {
+}

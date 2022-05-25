@@ -55,7 +55,27 @@ const sinnerI18n = {
         'Hide nick': 'Skrývat přezdívku',
         'Stop hiding nick': 'Přestat skrývat přezdívku',
         'Highlight nick': 'Zvýrazňovat přezdívku',
-        'Stop highlighting nick': 'Přestat zvýrazňovat přezdívku'
+        'Stop highlighting nick': 'Přestat zvýrazňovat přezdívku',
+        'Hidden deleted record: %1': [
+            'Skrytý smazaný záznam: %1',
+            'Skryté smazané záznamy: %1',
+            'Skrytých smazaných záznamů: %1'
+        ],
+        'Hidden unregistered nick: %1': [
+            'Neregistrovaná přezdívka: %1',
+            'Neregistrované přezdívky: %1',
+            'Neregistrovaných přezdívek: %1'
+        ],
+        'Hidden nick: %1': [
+            'Skrytá přezdívka: %1',
+            'Skryté přezdívky: %1',
+            'Skrytých přezdívek: %1'
+        ],
+        'Hidden word: %1': [
+            'Skrytý výraz: %1',
+            'Skryté výrazy: %1',
+            'Skrytých výrazů: %1'
+        ]
     },
     sk: {
         '': {
@@ -113,6 +133,26 @@ const sinnerI18n = {
         'Hide nick': 'Skrývať prezývku',
         'Stop hiding nick': 'Prestať skrývať prezývku',
         'Highlight nick': 'Zvýrazňovať prezývku',
-        'Stop highlighting nick': 'Prestať zvýrazňovať prezývku'
+        'Stop highlighting nick': 'Prestať zvýrazňovať prezývku',
+        'Hidden deleted record: %1': [
+            'Skrytý zmazaný záznam: %1',
+            'Skryté zmazané záznamy: %1',
+            'Skrytých zmazaných záznamov: %1'
+        ],
+        'Hidden unregistered nick: %1': [
+            'Skrytá neregistrovaná prezývka: %1',
+            'Skryté neregistrované prezývky: %1',
+            'Skrytých neregistrovaných prezývok: %1'
+        ],
+        'Hidden nick: %1': [
+            'Skrytá prezývka: %1',
+            'Skryté prezývky: %1',
+            'Skrytých prezývok: %1'
+        ],
+        'Hidden word: %1': [
+            'Skrytý výraz: %1',
+            'Skryté výrazy: %1',
+            'Skrytých výrazov: %1'
+        ]
     }
 };

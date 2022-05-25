@@ -467,7 +467,7 @@ sinner(function () {
                     container.appendChild(link);
                 },
                 transformAnchorTargets: function () {
-                    document.querySelectorAll("a[target='_blank']").forEach(function (link) {
+                    document.querySelectorAll("a[target='_blank'], area[target='_blank']").forEach(function (link) {
                         link.classList.add('transformedAnchor');
                         link.removeAttribute('target');
                     });
@@ -1194,15 +1194,81 @@ sinner(function () {
             this.counterUnregistered = 0;
             this.counterNicks = 0;
             this.counterWords = 0;
+            this.countersContainer = 'countersContainer';
 
             this.initialize();
         }
 
         displayCounters() {
-            // console.log('DELETED:', this.counterDeleted);
-            // console.log('UNREGISTERED:', this.counterUnregistered);
-            // console.log('NICKS:', this.counterNicks);
-            // console.log('WORDS:', this.counterWords);
+            let self = this,
+                container = document.getElementById(this.countersContainer),
+                links = new Map([
+                    ['counterWords', {
+                        action: 'resetTexts',
+                        icon: '/grafika/s10.gif',
+                        singular: 'Hidden word: %1',
+                        plural: 'Hidden words: %1'
+                    }],
+                    ['counterNicks', {
+                        action: 'resetNicks',
+                        icon: '/grafika/s8.gif',
+                        singular: 'Hidden nick: %1',
+                        plural: 'Hidden nicks: %1'
+                    }],
+                    ['counterUnregistered', {
+                        action: 'resetTexts',
+                        icon: '/grafika/s7.gif',
+                        singular: 'Hidden unregistered nick: %1',
+                        plural: 'Hidden unregistered nicks: %1'
+                    }],
+                    ['counterDeleted', {
+                        action: 'resetTexts',
+                        icon: '/grafika/s17.gif',
+                        singular: 'Hidden deleted record: %1',
+                        plural: 'Hidden deleted records: %1'
+                    }]
+                ]);
+
+            links.forEach(function (options, id) {
+                let el = document.getElementById(id),
+                    counter = self[id];
+
+                if (el !== null) {
+                    el.remove();
+                }
+
+                if (counter > 0) {
+                    let title = gettext._n(options.singular, options.plural, counter),
+                        link = Object.assign(document.createElement('a'), {
+                            id: id,
+                            className: 'counter',
+                            href: '#',
+                            title: title
+                        }),
+                        span = document.createElement('span'),
+                        icon = Object.assign(document.createElement('img'), {
+                            src: options.icon,
+                            width: 15,
+                            height: 15,
+                            border: 0,
+                            align: 'bottom',
+                            alt: title
+                        });
+
+                    span.appendChild(icon);
+                    span.insertAdjacentHTML('beforeend', '&nbsp;' + counter + '&nbsp;');
+                    link.appendChild(span);
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        e.target.remove();
+                        self[options.action]();
+                        self.displayCounters();
+                    });
+
+                    container.prepend(link);
+                }
+            });
         }
 
         initialize() {
@@ -1268,7 +1334,7 @@ sinner(function () {
         }
 
         resetAnchors() {
-            document.querySelectorAll("a.transformedAnchor").forEach(function (link) {
+            document.querySelectorAll(".transformedAnchor").forEach(function (link) {
                 link.target = '_blank';
                 link.classList.remove('transformedAnchor');
             });
@@ -1316,6 +1382,8 @@ sinner(function () {
 
             menu.appendChild(br);
             menu.appendChild(a);
+
+            document.querySelector('#ixmidst > div.boxheader > span').id = this.countersContainer;
         }
 
         async processNicks() {
@@ -1385,6 +1453,14 @@ sinner(function () {
     }
 
     class PostPage extends Page {
+        initialize() {
+            super.initialize();
+
+            let tables = document.querySelectorAll('body > div > table');
+
+            tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+        }
+
         async process() {
             if (document.querySelector('.infoctext')) {
                 return;
@@ -1592,6 +1668,15 @@ sinner(function () {
     }
 
     class ProfilePage extends Page {
+        initialize() {
+            super.initialize();
+
+            let tables = document.querySelectorAll('body > div > table');
+
+            tables[tables.length === 5 ? 4 : 5]
+                .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+        }
+
         processAvatars() {
             let info = document.querySelector('table.infoltext tbody'),
                 wwwContainer = info.children[info.children.length - 5];
@@ -1730,6 +1815,14 @@ sinner(function () {
     }
 
     class BookPage extends Page {
+        initialize() {
+            super.initialize();
+
+            document.querySelectorAll('body > div > table')[3]
+                .querySelectorAll('tbody > tr')[1]
+                .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+        }
+
         async processNicks() {
             super.processNicks();
 
@@ -1819,6 +1912,14 @@ sinner(function () {
     }
 
     class StatsPage extends Page {
+        initialize() {
+            super.initialize();
+
+            document.querySelectorAll('body > div > table')[4]
+                .querySelector('tbody > tr')
+                .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+        }
+
         async process() {
             switch (window.location.search) {
                 case '?prehled=4':
