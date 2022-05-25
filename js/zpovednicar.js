@@ -143,6 +143,7 @@ sinner(function () {
                 hideUnregisteredChangeListener: async function (key, old_value, new_value, remote) {
                     config.hideUnregistered = new_value;
                     page.resetNicks();
+                    page.resetUnregistered();
                     await page.processNicks();
                     page.displayCounters();
                 },
@@ -171,6 +172,7 @@ sinner(function () {
                 useHidingChangeListener: async function (key, old_value, new_value, remote) {
                     config.useHiding = new_value;
                     page.resetNicks();
+                    page.resetUnregistered();
                     page.resetTexts();
                     await page.processNicks();
                     await page.processTexts();
@@ -179,6 +181,7 @@ sinner(function () {
                 useHighlightingChangeListener: async function (key, old_value, new_value, remote) {
                     config.useHighlighting = new_value;
                     page.resetNicks();
+                    page.resetUnregistered();
                     page.resetTexts();
                     await page.processNicks();
                     await page.processTexts();
@@ -237,6 +240,7 @@ sinner(function () {
                         switch (subject) {
                             case 'user':
                                 page.resetNicks();
+                                page.resetUnregistered();
                                 await page.processNicks();
                                 page.displayCounters();
                                 break;
@@ -1216,13 +1220,13 @@ sinner(function () {
                         plural: 'Hidden nicks: %1'
                     }],
                     ['counterUnregistered', {
-                        action: 'resetTexts',
+                        action: 'resetUnregistered',
                         icon: '/grafika/s7.gif',
                         singular: 'Hidden unregistered nick: %1',
                         plural: 'Hidden unregistered nicks: %1'
                     }],
                     ['counterDeleted', {
-                        action: 'resetTexts',
+                        action: 'resetDeleted',
                         icon: '/grafika/s17.gif',
                         singular: 'Hidden deleted record: %1',
                         plural: 'Hidden deleted records: %1'
@@ -1248,8 +1252,8 @@ sinner(function () {
                         span = document.createElement('span'),
                         icon = Object.assign(document.createElement('img'), {
                             src: options.icon,
-                            width: 15,
-                            height: 15,
+                            width: 19,
+                            height: 19,
                             border: 0,
                             align: 'bottom',
                             alt: title
@@ -1262,7 +1266,7 @@ sinner(function () {
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.remove();
-                        self[options.action]();
+                        self[options.action](true);
                         self.displayCounters();
                     });
 
@@ -1327,6 +1331,7 @@ sinner(function () {
         reset() {
             this.resetDeleted();
             this.resetNicks();
+            this.resetUnregistered();
             this.resetTexts();
             this.resetAnchors();
             this.resetAvatars();
@@ -1345,15 +1350,49 @@ sinner(function () {
 
         resetDeleted() {
             this.counterDeleted = 0;
+
+            Utils.Css.removeClass('hiddenDeleted');
         }
 
-        resetNicks() {
-            this.counterUnregistered = 0;
+        resetNicks(unhideOnly) {
+            unhideOnly = unhideOnly || false;
+
             this.counterNicks = 0;
+
+            Utils.Css.removeClass('hiddenUser');
+
+            if (unhideOnly) {
+                return;
+            }
+
+            Utils.Css.removeClass(['highlightUser', 'strikeUser', 'highlightStatsUser']);
+
+            document.querySelectorAll('.userLinks').forEach(function (el) {
+                Utils.Dom.removeAllChildNodes(el);
+                el.remove();
+            });
         }
 
-        resetTexts() {
+        resetTexts(unhideOnly) {
+            unhideOnly = unhideOnly || false;
+
             this.counterWords = 0;
+
+            Utils.Css.removeClass('hiddenWord');
+
+            if (unhideOnly) {
+                return;
+            }
+
+            document.querySelectorAll('.highlightWord, .strikeWord').forEach(function (el) {
+                Utils.String.unwrap(el);
+            });
+        }
+
+        resetUnregistered() {
+            this.counterUnregistered = 0;
+
+            Utils.Css.removeClass('unregisteredUser');
         }
     }
 
@@ -1387,7 +1426,7 @@ sinner(function () {
         }
 
         async processNicks() {
-            super.processNicks();
+            await super.processNicks();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('user', true, true),
@@ -1412,7 +1451,7 @@ sinner(function () {
         }
 
         async processTexts() {
-            super.processTexts();
+            await super.processTexts();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('word', true),
@@ -1434,22 +1473,6 @@ sinner(function () {
                 }
             });
         }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-
-            super.resetNicks();
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            super.resetTexts();
-        }
     }
 
     class PostPage extends Page {
@@ -1466,10 +1489,10 @@ sinner(function () {
                 return;
             }
 
-            super.process();
+            await super.process();
         }
 
-        async processDeleted() {
+        processDeleted() {
             if (!config.hideDeleted) {
                 return;
             }
@@ -1481,19 +1504,20 @@ sinner(function () {
                 let toHide = [deleted.parentElement, deleted.parentElement.previousElementSibling, deleted.parentElement.nextElementSibling],
                     previousContent = deleted.parentElement.previousElementSibling.previousElementSibling.firstElementChild.firstElementChild.innerHTML.trim();
 
+                self.counterDeleted++;
+
                 if (previousContent.length === 0) {
                     toHide.push(deleted.parentElement.previousElementSibling.previousElementSibling);
                 }
 
                 toHide.forEach(function (el) {
-                    self.counterDeleted++;
                     el.classList.add('hiddenDeleted');
                 });
             });
         }
 
         async processNicks() {
-            super.processNicks();
+            await super.processNicks();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('user', true, true),
@@ -1545,9 +1569,10 @@ sinner(function () {
                     && !isRegistered
                 ) {
                     self.counterUnregistered++;
+
                     containers.forEach(function (tr) {
-                        if (!tr.classList.contains('hiddenUser')) {
-                            tr.classList.add('hiddenUser');
+                        if (!tr.classList.contains('unregisteredUser')) {
+                            tr.classList.add('unregisteredUser');
                         }
                     });
                 }
@@ -1558,6 +1583,7 @@ sinner(function () {
                     }
                 } else if (config.useHiding && hide.includes(nick)) {
                     self.counterNicks++;
+
                     containers.forEach(function (tr) {
                         if (!tr.classList.contains('hiddenUser')) {
                             tr.classList.add('hiddenUser');
@@ -1571,7 +1597,7 @@ sinner(function () {
         }
 
         async processTexts() {
-            super.processTexts();
+            await super.processTexts();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('word', true),
@@ -1613,8 +1639,9 @@ sinner(function () {
                     hidden = false;
 
                 if (config.useHiding && (hidden = Utils.String.containsWord(textEl, hide)) !== false) {
+                    self.counterWords++;
+
                     toHide.forEach(function (hel) {
-                        self.counterWords++;
                         hel.classList.add('hiddenWord');
                     });
                 }
@@ -1631,39 +1658,6 @@ sinner(function () {
                     }
                 }
             });
-        }
-
-        async resetDeleted() {
-            document.querySelectorAll('tr.hiddenDeleted').forEach(function (el) {
-                el.classList.remove('hiddenDeleted');
-            });
-
-            super.resetDeleted();
-        }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-
-            super.resetNicks();
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.strikeWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            super.resetTexts();
         }
     }
 
@@ -1695,7 +1689,7 @@ sinner(function () {
         }
 
         async processNicks() {
-            super.processNicks();
+            await super.processNicks();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('user', true, true),
@@ -1734,9 +1728,9 @@ sinner(function () {
                     });
 
                 if (config.hideUnregistered && !isRegistered) {
-                    if (!parent.classList.contains('hiddenUser')) {
+                    if (!parent.classList.contains('unregisteredUser')) {
                         self.counterUnregistered++;
-                        parent.classList.add('hiddenUser');
+                        parent.classList.add('unregisteredUser');
                     }
                 }
 
@@ -1757,7 +1751,7 @@ sinner(function () {
         }
 
         async processTexts() {
-            super.processTexts();
+            await super.processTexts();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('word', true),
@@ -1791,27 +1785,6 @@ sinner(function () {
                 avatar.parentElement.remove();
             });
         }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser', 'strikeUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-
-            super.resetNicks();
-        }
-
-        resetTexts() {
-            Utils.Css.removeClass('hiddenWord');
-
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            super.resetTexts();
-        }
     }
 
     class BookPage extends Page {
@@ -1824,7 +1797,7 @@ sinner(function () {
         }
 
         async processNicks() {
-            super.processNicks();
+            await super.processNicks();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('user', true, true),
@@ -1841,9 +1814,9 @@ sinner(function () {
                     });
 
                 if (config.hideUnregistered && !isRegistered) {
-                    if (!parent.classList.contains('hiddenUser')) {
+                    if (!parent.classList.contains('unregisteredUser')) {
                         self.counterUnregistered++;
-                        parent.classList.add('hiddenUser');
+                        parent.classList.add('unregisteredUser');
                     }
                 }
 
@@ -1864,7 +1837,7 @@ sinner(function () {
         }
 
         async processTexts() {
-            super.processTexts();
+            await super.processTexts();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('word', true),
@@ -1885,29 +1858,6 @@ sinner(function () {
                     }
                 }
             });
-        }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightUser', 'hiddenUser']);
-
-            document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
-                el.remove();
-            });
-
-            super.resetNicks();
-        }
-
-        resetTexts() {
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            document.querySelectorAll('.hiddenWord').forEach(function (el) {
-                el.classList.remove('hiddenWord');
-            });
-
-            super.resetTexts();
         }
     }
 
@@ -1946,7 +1896,7 @@ sinner(function () {
         }
 
         async processNicks(skip) {
-            super.processNicks();
+            await super.processNicks();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('user', true, true),
@@ -1976,7 +1926,7 @@ sinner(function () {
         }
 
         async processTexts(count) {
-            super.processTexts();
+            await super.processTexts();
 
             let self = this,
                 highlight = await Utils.Db.getIdioms('word', true),
@@ -2004,24 +1954,6 @@ sinner(function () {
                     }
                 }
             });
-        }
-
-        resetNicks() {
-            Utils.Css.removeClass(['highlightStatsUser', 'hiddenUser']);
-
-            super.resetNicks();
-        }
-
-        resetTexts() {
-            document.querySelectorAll('.highlightWord').forEach(function (el) {
-                Utils.String.unwrap(el);
-            });
-
-            document.querySelectorAll('.hiddenWord').forEach(function (el) {
-                el.classList.remove('hiddenWord');
-            });
-
-            super.resetTexts();
         }
     }
 
