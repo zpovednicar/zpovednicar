@@ -69,7 +69,7 @@ ul.sinnerList a, ul.sinnerList a:visited {
     color: #ffffcc;
 }
 
-#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.hiddenWord {
+#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser, tr.hiddenWord {
     display: none;
 }
 
@@ -116,4 +116,21 @@ img.transformedAvatar {
 
 img.avatar {
     object-fit: contain;
+}
+
+#countersContainer {
+    display: table-cell;
+}
+
+#countersContainer a.counter {
+    vertical-align: top;
+}
+
+#countersContainer a.counter img {
+    vertical-align: top;
+}
+
+#countersContainer a.counter span {
+    display: table-cell;
+    vertical-align: bottom;
 }
