@@ -1597,8 +1597,7 @@ sinner(function () {
                 header = document.querySelector('td.confheader'),
                 headers = document.querySelectorAll('td.conftext'),
                 content = headers[0],
-                authorInfo = headers[1].querySelectorAll('td.signinfo')[1],
-                wrapped;
+                authorInfo = headers[1].querySelectorAll('td.signinfo')[1];
 
             if (config.useHiding) {
                 if (Utils.String.containsWord(header, hide)) {
@@ -1627,8 +1626,7 @@ sinner(function () {
                     headEl = nickEl.previousElementSibling.previousElementSibling,
                     textEl = nickEl.previousElementSibling.firstElementChild,
                     toHide = [nickEl, headEl, textEl.parentElement],
-                    isVip = Utils.Dom.isVip(el.nextElementSibling),
-                    hidden = false;
+                    isVip = Utils.Dom.isVip(el.nextElementSibling);
 
                 if (config.useHiding && Utils.String.containsWord(textEl, hide)) {
                     self.counterWords++;
