@@ -475,6 +475,19 @@ sinner(function () {
                         link.classList.add('transformedAnchor');
                         link.removeAttribute('target');
                     });
+                },
+                wrapElementWords(page, selector, highlight, hide) {
+                    document.querySelectorAll(selector).forEach(function (el) {
+                        if (config.useHiding && Utils.String.containsWord(el, hide)) {
+                            page.counterWords++;
+                            el.parentElement.parentElement.classList.add('hiddenWord');
+                            el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
+                        }
+
+                        if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
+                            el.innerHTML = Utils.String.wrapAll(el, highlight);
+                        }
+                    });
                 }
             },
             String: {
@@ -499,23 +512,15 @@ sinner(function () {
                     return result;
                 },
                 containsWord: function (el, words) {
-                    let content = el.innerText.trim(),
-                        haystack = Utils.String.compress(content, true),
-                        result = false;
+                    let content = el.innerText.trim();
 
                     for (let word of words) {
-                        if (result) {
-                            continue;
-                        }
-
-                        let needle = Utils.String.compress(word, true);
-
-                        if (Utils.String.stripos(haystack, needle) !== false) {
-                            result = true;
+                        if (Utils.String.stripos(content, word) !== false) {
+                            return true;
                         }
                     }
 
-                    return result;
+                    return false;
                 },
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -1455,25 +1460,10 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let self = this,
-                highlight = await Utils.Db.getIdioms('word', true),
+            let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
-                let hidden = false,
-                    wrapped;
-
-                if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
-                    self.counterWords++;
-                    el.parentElement.parentElement.classList.add('hiddenWord');
-                }
-
-                if (!hidden && config.useHighlighting) {
-                    if ((wrapped = Utils.String.wrapAll(el, highlight)) !== false) {
-                        el.innerHTML = wrapped;
-                    }
-                }
-            });
+            Utils.Dom.wrapElementWords(this, 'li.c3 a, li.c3l a', highlight, hide);
         }
     }
 
@@ -1607,24 +1597,23 @@ sinner(function () {
                 header = document.querySelector('td.confheader'),
                 headers = document.querySelectorAll('td.conftext'),
                 content = headers[0],
-                authorInfo = headers[1].querySelectorAll('td.signinfo')[1],
-                wrapped;
+                authorInfo = headers[1].querySelectorAll('td.signinfo')[1];
 
             if (config.useHiding) {
-                if ((wrapped = Utils.String.wrapAll(header, hide, 'strikeWord')) !== false) {
-                    header.innerHTML = wrapped;
+                if (Utils.String.containsWord(header, hide)) {
+                    header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
                 }
-                if ((wrapped = Utils.String.wrapAll(content, hide, 'strikeWord')) !== false) {
-                    content.innerHTML = wrapped;
+                if (Utils.String.containsWord(content, hide)) {
+                    content.innerHTML = Utils.String.wrapAll(content, hide, 'strikeWord');
                 }
             }
 
             if (config.useHighlighting) {
-                if ((wrapped = Utils.String.wrapAll(header, highlight)) !== false) {
-                    header.innerHTML = wrapped;
+                if (Utils.String.containsWord(header, highlight)) {
+                    header.innerHTML = Utils.String.wrapAll(header, highlight);
                 }
-                if ((wrapped = Utils.String.wrapAll(content, highlight)) !== false) {
-                    content.innerHTML = wrapped;
+                if (Utils.String.containsWord(content, highlight)) {
+                    content.innerHTML = Utils.String.wrapAll(content, highlight);
                 }
             }
 
@@ -1637,27 +1626,23 @@ sinner(function () {
                     headEl = nickEl.previousElementSibling.previousElementSibling,
                     textEl = nickEl.previousElementSibling.firstElementChild,
                     toHide = [nickEl, headEl, textEl.parentElement],
-                    isVip = Utils.Dom.isVip(el.nextElementSibling),
-                    hidden = false;
+                    isVip = Utils.Dom.isVip(el.nextElementSibling);
 
-                if (config.useHiding && (hidden = Utils.String.containsWord(textEl, hide)) !== false) {
+                if (config.useHiding && Utils.String.containsWord(textEl, hide)) {
                     self.counterWords++;
+                    textEl.innerHTML = Utils.String.wrapAll(textEl, hide, 'strikeWord');
 
                     toHide.forEach(function (hel) {
                         hel.classList.add('hiddenWord');
                     });
                 }
 
-                if (!hidden) {
-                    if (config.useHighlighting) {
-                        if ((wrapped = Utils.String.wrapAll(textEl, highlight)) !== false) {
-                            textEl.innerHTML = wrapped;
-                        }
-                    }
+                if (config.useHighlighting && Utils.String.containsWord(textEl, highlight)) {
+                    textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
+                }
 
-                    if (isVip) {
-                        Utils.Dom.embedYoutube(textEl);
-                    }
+                if (isVip) {
+                    Utils.Dom.embedYoutube(textEl);
                 }
             });
         }
@@ -1755,25 +1740,10 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let self = this,
-                highlight = await Utils.Db.getIdioms('word', true),
+            let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            document.querySelectorAll('div.guesttext').forEach(function (el) {
-                let hidden = false,
-                    wrapped;
-
-                if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
-                    self.counterWords++;
-                    el.parentElement.parentElement.classList.add('hiddenWord');
-                }
-
-                if (!hidden && config.useHighlighting) {
-                    if ((wrapped = Utils.String.wrapAll(el, highlight)) !== false) {
-                        el.innerHTML = wrapped;
-                    }
-                }
-            });
+            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
         }
 
         resetAvatars() {
@@ -1841,25 +1811,10 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let self = this,
-                highlight = await Utils.Db.getIdioms('word', true),
+            let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            document.querySelectorAll('div.guesttext').forEach(function (el) {
-                let hidden = false,
-                    wrapped;
-
-                if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
-                    self.counterWords++;
-                    el.parentElement.parentElement.classList.add('hiddenWord');
-                }
-
-                if (!hidden && config.useHighlighting) {
-                    if ((wrapped = Utils.String.wrapAll(el, highlight)) !== false) {
-                        el.innerHTML = wrapped;
-                    }
-                }
-            });
+            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
         }
     }
 
@@ -1938,22 +1893,18 @@ sinner(function () {
             count = count || 0;
 
             document.querySelectorAll('td.lstconf').forEach(function (el) {
-                let hidden = false,
-                    wrapped;
-
                 if (count > 0 && ++index > count) {
                     return;
                 }
 
-                if (config.useHiding && (hidden = Utils.String.containsWord(el, hide)) !== false) {
+                if (config.useHiding && Utils.String.containsWord(el, hide)) {
                     self.counterWords++;
                     el.parentElement.classList.add('hiddenWord');
+                    el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
                 }
 
-                if (!hidden && config.useHighlighting) {
-                    if ((wrapped = Utils.String.wrapAll(el, highlight)) !== false) {
-                        el.innerHTML = wrapped;
-                    }
+                if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
+                    el.innerHTML = Utils.String.wrapAll(el, highlight);
                 }
             });
         }
