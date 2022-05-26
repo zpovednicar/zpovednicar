@@ -463,10 +463,14 @@ sinner(function () {
                         link.target = '_blank';
                     }
 
-                    if (photo !== null) {
-                        photo.classList.add('transformedAvatar');
+                    if (photo === null) {
+                        photo = document.createElement('span');
+                        photo.innerHTML = container.innerText;
+                        container.innerHTML = '';
+                        container.appendChild(photo);
                     }
 
+                    photo.classList.add('transformedAvatar');
                     link.appendChild(img);
                     container.appendChild(link);
                 },
