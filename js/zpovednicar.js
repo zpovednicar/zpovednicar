@@ -57,10 +57,10 @@ sinner(function () {
                 ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ]),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
-            transformAvatars: GM_getValue('sinner.transformAvatars', false),
+            transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
-            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 0),
+            youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 1),
             youtubeThumbnails: new Map([
                 [0, {
                     label: gettext.__('-- none --')
@@ -1639,9 +1639,9 @@ sinner(function () {
                 }
             }
 
-            if (Utils.Dom.isVip(authorInfo)) {
+            // if (Utils.Dom.isVip(authorInfo)) {
                 Utils.Dom.embedYoutube(content);
-            }
+            // }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
                 let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
@@ -1663,9 +1663,9 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
-                if (isVip) {
+                // if (isVip) {
                     Utils.Dom.embedYoutube(textEl);
-                }
+                // }
             });
         }
     }
