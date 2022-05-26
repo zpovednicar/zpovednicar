@@ -479,7 +479,7 @@ sinner(function () {
 
                         copy.addEventListener('click', function (e) {
                             e.preventDefault();
-                            e.target.remove();
+                            e.target.parentElement.parentElement.remove();
                             page.resetAvatars();
                         });
 
