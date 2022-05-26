@@ -435,7 +435,7 @@ sinner(function () {
                         parent.removeChild(parent.firstChild);
                     }
                 },
-                replaceAvatar: function (container, src) {
+                replaceAvatar: function (container, src, related) {
                     if (!src.match(/^(http(s?):)([/|.|\w|\s|-])*\.(?:apng|gif|jpg|jpeg|jfif|pjpeg|pjp|png|svg|webp)$/)) {
                         return;
                     }
@@ -463,10 +463,32 @@ sinner(function () {
                         link.target = '_blank';
                     }
 
-                    if (photo !== null) {
-                        photo.classList.add('transformedAvatar');
+                    if (photo === null) {
+                        photo = document.createElement('span');
+                        photo.innerHTML = container.innerText;
+                        container.innerHTML = '';
+                        container.appendChild(photo);
+                    } else {
+                        let copy = Object.assign(photo.cloneNode(), {
+                                height: 50,
+                            }),
+                            tr = document.createElement('tr'),
+                            td = document.createElement('td');
+
+                        copy.removeAttribute('width');
+
+                        copy.addEventListener('click', function (e) {
+                            e.preventDefault();
+                            e.target.remove();
+                            page.resetAvatars();
+                        });
+
+                        td.appendChild(copy);
+                        tr.appendChild(td);
+                        related.appendChild(tr);
                     }
 
+                    photo.classList.add('transformedAvatar');
                     link.appendChild(img);
                     container.appendChild(link);
                 },
@@ -1659,8 +1681,8 @@ sinner(function () {
         }
 
         processAvatars() {
-            let info = document.querySelector('table.infoltext tbody'),
-                wwwContainer = info.children[info.children.length - 5];
+            let info = document.querySelectorAll('table.infoltext tbody'),
+                wwwContainer = info[0].children[info[0].children.length - 5];
 
             // Fixes ugly design effect of long URL in the table cell refs #13
             wwwContainer.parentElement.parentElement.parentElement.setAttribute('align', 'left');
@@ -1672,7 +1694,7 @@ sinner(function () {
             let www = wwwContainer.innerText.trim().slice(13).trim(),
                 container = document.querySelector('td.photo');
 
-            Utils.Dom.replaceAvatar(container, www);
+            Utils.Dom.replaceAvatar(container, www, info[1]);
         }
 
         async processNicks() {
@@ -1747,13 +1769,9 @@ sinner(function () {
         }
 
         resetAvatars() {
+            Utils.Css.removeClass('transformedAvatar');
+
             document.querySelectorAll('img.avatar').forEach(function (avatar) {
-                let photo = avatar.parentElement.parentElement.querySelector('img.transformedAvatar');
-
-                if (photo !== null) {
-                    photo.classList.remove('transformedAvatar');
-                }
-
                 avatar.parentElement.remove();
             });
         }

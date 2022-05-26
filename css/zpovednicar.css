@@ -110,7 +110,7 @@ span.userLinks img {
     height: 100%;
 }
 
-img.transformedAvatar {
+.transformedAvatar {
     display: none;
 }
 
