@@ -1,6 +1,6 @@
 'use strict';
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_CUSTOM']) {
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
     GM_addStyle(GM_getResourceText(resource));
 }
 
