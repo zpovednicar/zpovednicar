@@ -75,7 +75,8 @@ const sinnerI18n = {
             'Skrytý výraz: %1',
             'Skryté výrazy: %1',
             'Skrytých výrazů: %1'
-        ]
+        ],
+        'Use Markdown syntax/editor': 'Používat syntaxi/editor Markdown'
     },
     sk: {
         '': {
@@ -153,6 +154,7 @@ const sinnerI18n = {
             'Skrytý výraz: %1',
             'Skryté výrazy: %1',
             'Skrytých výrazov: %1'
-        ]
+        ],
+        'Use Markdown syntax/editor': 'Používať syntax/editor Markdown'
     }
 };

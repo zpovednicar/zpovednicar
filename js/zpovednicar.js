@@ -60,6 +60,7 @@ sinner(function () {
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
+            useMarkdown: GM_getValue('sinner.useMarkdown', true),
             youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 1),
             youtubeThumbnails: new Map([
                 [0, {
@@ -186,6 +187,10 @@ sinner(function () {
                     await page.processNicks();
                     await page.processTexts();
                     page.displayCounters();
+                },
+                useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
+                    config.useMarkdown = new_value;
+                    //TODO
                 },
                 youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
                     config.youtubeThumbnail = new_value;
@@ -953,29 +958,27 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    gettext.__('Thumbnails of Youtube videos') +
+                    gettext.__('Use Markdown syntax/editor') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<select id="youtubeThumbnail">';
-                config.youtubeThumbnails.forEach(function (thumb, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
-                })
-                modalContent +=
-                    '</select>' +
+                    '<input type="radio" name="useMarkdown" id="useMarkdownYes"' + (config.useMarkdown ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="useMarkdownYes">' + gettext.__('Yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="useMarkdown" id="useMarkdownNo"' + (config.useMarkdown ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="useMarkdownNo">' + gettext.__('No') + '</label>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    gettext.__('Enforce domain') +
+                    gettext.__('Thumbnails of Youtube videos') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>' +
-                    '<select id="enforceDomain">';
-                config.domains.forEach(function (value, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                    '<select id="youtubeThumbnail">';
+                config.youtubeThumbnails.forEach(function (thumb, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
                 })
                 modalContent +=
                     '</select>' +
@@ -984,21 +987,36 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    gettext.__('Color for highlighting') +
+                    gettext.__('Enforce domain') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
+                    '<select id="enforceDomain">';
+                config.domains.forEach(function (value, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                })
+                modalContent +=
+                    '</select>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    gettext.__('Database backup') +
+                    gettext.__('Color for highlighting') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<p>';
+                    '<p>' +
+                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
+                    '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    gettext.__('Database backup') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column-narrow">';
                 if (isFileSaverSupported) {
                     modalContent +=
                         '<button id="settingsBackup">' + gettext.__('Backup') + '</button>' +
@@ -1008,7 +1026,6 @@ sinner(function () {
                     modalContent += gettext.__('Not supported by your browser');
                 }
                 modalContent +=
-                    '</p>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
@@ -1050,6 +1067,11 @@ sinner(function () {
                 document.querySelectorAll('input[name="transformAvatars"]').forEach(function (input) {
                     input.addEventListener('change', function (e) {
                         GM_setValue('sinner.transformAvatars', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="useMarkdown"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        GM_setValue('sinner.useMarkdown', Boolean(parseInt(e.target.value)))
                     });
                 });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
@@ -1309,6 +1331,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.highlightColor', Events.Config.highlightColorChangeListener);
             GM_addValueChangeListener('sinner.useHiding', Events.Config.useHidingChangeListener);
             GM_addValueChangeListener('sinner.useHighlighting', Events.Config.useHighlightingChangeListener);
+            GM_addValueChangeListener('sinner.useMarkdown', Events.Config.useMarkdownChangeListener);
             GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
             GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
