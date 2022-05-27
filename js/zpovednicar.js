@@ -424,12 +424,6 @@ sinner(function () {
                         el.appendChild(container);
                     });
                 },
-                isVip: function (infoEl) {
-                    let imgs = infoEl.querySelectorAll('img'),
-                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
-
-                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
-                },
                 removeAllChildNodes: function (parent) {
                     while (parent.firstChild) {
                         parent.removeChild(parent.firstChild);
@@ -1639,16 +1633,13 @@ sinner(function () {
                 }
             }
 
-            // if (Utils.Dom.isVip(authorInfo)) {
-                Utils.Dom.embedYoutube(content);
-            // }
+            Utils.Dom.embedYoutube(content);
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
                 let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
                     headEl = nickEl.previousElementSibling.previousElementSibling,
                     textEl = nickEl.previousElementSibling.firstElementChild,
-                    toHide = [nickEl, headEl, textEl.parentElement],
-                    isVip = Utils.Dom.isVip(el.nextElementSibling);
+                    toHide = [nickEl, headEl, textEl.parentElement];
 
                 if (config.useHiding && Utils.String.containsWord(textEl, hide)) {
                     self.counterWords++;
@@ -1663,9 +1654,7 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
-                // if (isVip) {
-                    Utils.Dom.embedYoutube(textEl);
-                // }
+                Utils.Dom.embedYoutube(textEl);
             });
         }
     }
