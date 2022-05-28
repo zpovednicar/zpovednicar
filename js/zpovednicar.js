@@ -48,8 +48,39 @@ sinner(function () {
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
+            editorOptions: { // https://github.com/Ionaru/easy-markdown-editor#options-list
+                // autoDownloadFontAwesome: true,
+                // autosave: {
+                //     enabled: true,
+                //     uniqueId: 'xxx',
+                //     text: '...saved...'
+                // },
+                // hideIcons: [],
+                // showIcons: [],
+                // renderingConfig: {
+                //     markedOptions: {
+                //         headerIds: false,
+                //         renderer: ...
+                //     },
+                //     sanitizerFunction: ...
+                // },
+                // previewRender: ...
+                // spellChecker: false,
+                // nativeSpellcheck: true,
+                // sideBySideFullscreen: false,
+                // status: ...
+                // theme: ...
+                // toolbar: ...
+                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
+                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
+                //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
+                // toolbarTips: ...
+                // lineWrapping: false
+            },
             hideDeleted: GM_getValue('sinner.hideDeleted', false),
             hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
+            parserOptions: { // https://marked.js.org/using_advanced#options
+            },
             questions: new Map([
                 ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
                 ['ul#hideUser', gettext.__('Really delete hidden user?')],
@@ -191,15 +222,16 @@ sinner(function () {
                 useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
                     config.useMarkdown = new_value;
 
-                    if (page.editor === null) {
+                    if (typeof page.editor === 'undefined') {
                         return;
                     }
 
                     if (new_value) {
-                        page.editor = Utils.Markdown.editor();
+                        page.editor = new EasyMDE(config.editorOptions);
                     } else {
                         page.editor.toTextArea();
-                        page.editor = false;
+                        page.editor.cleanup();
+                        page.editor = null;
                     }
                 },
                 youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
@@ -519,43 +551,6 @@ sinner(function () {
                             el.innerHTML = Utils.String.wrapAll(el, highlight);
                         }
                     });
-                }
-            },
-            Markdown: {
-                editor: function () {
-                    // https://www.npmjs.com/package/markdown-it-emoji
-                    let options = {
-                            // autoDownloadFontAwesome: true,
-                            // autosave: {
-                            //     enabled: true,
-                            //     uniqueId: 'xxx',
-                            //     text: '...saved...'
-                            // },
-                            // hideIcons: [],
-                            // showIcons: [],
-                            // renderingConfig: {
-                            //     markedOptions: {
-                            //         headerIds: false,
-                            //         renderer: ...
-                            //     },
-                            //     sanitizerFunction: ...
-                            // },
-                            // previewRender: ...
-                            // spellChecker: false,
-                            // nativeSpellcheck: true,
-                            // sideBySideFullscreen: false,
-                            // status: ...
-                            // theme: ...
-                            // toolbar: ...
-                            //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
-                            //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
-                            //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
-                            // toolbarTips: ...
-                            // lineWrapping: false
-                        },
-                        editor = new EasyMDE(options);
-
-                    return editor;
                 }
             },
             String: {
@@ -1291,10 +1286,6 @@ sinner(function () {
             this.counterNicks = 0;
             this.counterWords = 0;
             this.countersContainer = 'countersContainer';
-
-            this.editor = null;
-
-            this.initialize();
         }
 
         displayCounters() {
@@ -1384,6 +1375,10 @@ sinner(function () {
             GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
             GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
+
+            marked.setOptions(config.parserOptions);
+
+            return this;
         }
 
         modal(e) {
@@ -1518,6 +1513,8 @@ sinner(function () {
             menu.appendChild(a);
 
             document.querySelector('#ixmidst > div.boxheader > span').id = this.countersContainer;
+
+            return this;
         }
 
         async processNicks() {
@@ -1556,14 +1553,25 @@ sinner(function () {
     }
 
     class PostPage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+        }
+
         initialize() {
             super.initialize();
 
-            this.editor = false;
-
-            let tables = document.querySelectorAll('body > div > table');
+            let isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
+                tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+
+            if (!isQuotes && config.useMarkdown) {
+                this.editor = new EasyMDE(config.editorOptions);
+            }
+
+            return this;
         }
 
         async process() {
@@ -1571,13 +1579,7 @@ sinner(function () {
                 return;
             }
 
-            let isQuotes = window.location.pathname.startsWith('/zpovperl.php');
-
             await super.process();
-
-            if (!isQuotes && config.useMarkdown) {
-                this.editor = Utils.Markdown.editor();
-            }
         }
 
         processDeleted() {
@@ -1740,6 +1742,12 @@ sinner(function () {
     }
 
     class ProfilePage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+        }
+
         initialize() {
             super.initialize();
 
@@ -1749,14 +1757,12 @@ sinner(function () {
 
             tables[tables.length === 5 ? 4 : 5]
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
-        }
-
-        async process() {
-            await super.process();
 
             if (config.useMarkdown) {
-                this.editor = Utils.Markdown.editor();
+                this.editor = new EasyMDE(config.editorOptions);
             }
+
+            return this;
         }
 
         processAvatars() {
@@ -1857,22 +1863,24 @@ sinner(function () {
     }
 
     class BookPage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+        }
+
         initialize() {
             super.initialize();
-
-            this.editor = false;
 
             document.querySelectorAll('body > div > table')[3]
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
-        }
-
-        async process() {
-            await super.process();
 
             if (config.useMarkdown) {
-                this.editor = Utils.Markdown.editor();
+                this.editor = new EasyMDE(config.editorOptions);
             }
+
+            return this;
         }
 
         async processNicks() {
@@ -1932,6 +1940,8 @@ sinner(function () {
             document.querySelectorAll('body > div > table')[4]
                 .querySelector('tbody > tr')
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+
+            return this;
         }
 
         async process() {
@@ -2051,5 +2061,5 @@ sinner(function () {
 
     GM_registerMenuCommand(gettext.__('Settings'), page.modal);
 
-    page.process();
+    page.initialize().process();
 });
