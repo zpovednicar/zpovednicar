@@ -190,7 +190,17 @@ sinner(function () {
                 },
                 useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
                     config.useMarkdown = new_value;
-                    //TODO
+
+                    if (page.editor === null) {
+                        return;
+                    }
+
+                    if (new_value) {
+                        page.editor = Utils.Markdown.editor();
+                    } else {
+                        page.editor.toTextArea();
+                        page.editor = false;
+                    }
                 },
                 youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
                     config.youtubeThumbnail = new_value;
@@ -1252,6 +1262,8 @@ sinner(function () {
             this.counterWords = 0;
             this.countersContainer = 'countersContainer';
 
+            this.editor = null;
+
             this.initialize();
         }
 
@@ -1517,6 +1529,8 @@ sinner(function () {
         initialize() {
             super.initialize();
 
+            this.editor = false;
+
             let tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
@@ -1529,11 +1543,11 @@ sinner(function () {
 
             let isQuotes = window.location.pathname.startsWith('/zpovperl.php');
 
-            if (!isQuotes && config.useMarkdown) {
-                let editor = Utils.Markdown.editor();
-            }
-
             await super.process();
+
+            if (!isQuotes && config.useMarkdown) {
+                this.editor = Utils.Markdown.editor();
+            }
         }
 
         processDeleted() {
@@ -1699,6 +1713,8 @@ sinner(function () {
         initialize() {
             super.initialize();
 
+            this.editor = false;
+
             let tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length === 5 ? 4 : 5]
@@ -1706,11 +1722,11 @@ sinner(function () {
         }
 
         async process() {
-            if (config.useMarkdown) {
-                let editor = Utils.Markdown.editor();
-            }
-
             await super.process();
+
+            if (!isQuotes && config.useMarkdown) {
+                this.editor = Utils.Markdown.editor();
+            }
         }
 
         processAvatars() {
@@ -1814,17 +1830,19 @@ sinner(function () {
         initialize() {
             super.initialize();
 
+            this.editor = false;
+
             document.querySelectorAll('body > div > table')[3]
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
         }
 
         async process() {
-            if (config.useMarkdown) {
-                let editor = Utils.Markdown.editor();
-            }
-
             await super.process();
+
+            if (!isQuotes && config.useMarkdown) {
+                this.editor = Utils.Markdown.editor();
+            }
         }
 
         async processNicks() {
