@@ -1724,7 +1724,7 @@ sinner(function () {
         async process() {
             await super.process();
 
-            if (!isQuotes && config.useMarkdown) {
+            if (config.useMarkdown) {
                 this.editor = Utils.Markdown.editor();
             }
         }
@@ -1840,7 +1840,7 @@ sinner(function () {
         async process() {
             await super.process();
 
-            if (!isQuotes && config.useMarkdown) {
+            if (config.useMarkdown) {
                 this.editor = Utils.Markdown.editor();
             }
         }
