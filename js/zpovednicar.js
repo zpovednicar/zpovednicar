@@ -511,6 +511,13 @@ sinner(function () {
                     });
                 }
             },
+            Markdown: {
+                editor: function() {
+                    let editor = new EasyMDE();
+
+                    return editor;
+                }
+            },
             String: {
                 capitalizeFirstLetter: function (s) {
                     return s[0].toUpperCase() + s.slice(1);
@@ -1520,6 +1527,12 @@ sinner(function () {
                 return;
             }
 
+            let isQuotes = window.location.pathname.startsWith('/zpovperl.php');
+
+            if (!isQuotes && config.useMarkdown) {
+                let editor = Utils.Markdown.editor();
+            }
+
             await super.process();
         }
 
@@ -1692,6 +1705,14 @@ sinner(function () {
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
         }
 
+        async process() {
+            if (config.useMarkdown) {
+                let editor = Utils.Markdown.editor();
+            }
+
+            await super.process();
+        }
+
         processAvatars() {
             let info = document.querySelectorAll('table.infoltext tbody'),
                 wwwContainer = info[0].children[info[0].children.length - 5];
@@ -1796,6 +1817,14 @@ sinner(function () {
             document.querySelectorAll('body > div > table')[3]
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+        }
+
+        async process() {
+            if (config.useMarkdown) {
+                let editor = Utils.Markdown.editor();
+            }
+
+            await super.process();
         }
 
         async processNicks() {

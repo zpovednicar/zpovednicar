@@ -134,3 +134,9 @@ img.avatar {
     display: table-cell;
     vertical-align: bottom;
 }
+
+div.editor-toolbar {
+    color: #000000;
+    background-color: #90CCF1;
+}
+
