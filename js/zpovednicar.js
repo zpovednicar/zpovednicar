@@ -522,8 +522,38 @@ sinner(function () {
                 }
             },
             Markdown: {
-                editor: function() {
-                    let editor = new EasyMDE();
+                editor: function () {
+                    // https://www.npmjs.com/package/markdown-it-emoji
+                    let options = {
+                            // autoDownloadFontAwesome: true,
+                            // autosave: {
+                            //     enabled: true,
+                            //     uniqueId: 'xxx',
+                            //     text: '...saved...'
+                            // },
+                            // hideIcons: [],
+                            // showIcons: [],
+                            // renderingConfig: {
+                            //     markedOptions: {
+                            //         headerIds: false,
+                            //         renderer: ...
+                            //     },
+                            //     sanitizerFunction: ...
+                            // },
+                            // previewRender: ...
+                            // spellChecker: false,
+                            // nativeSpellcheck: true,
+                            // sideBySideFullscreen: false,
+                            // status: ...
+                            // theme: ...
+                            // toolbar: ...
+                            //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
+                            //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
+                            //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
+                            // toolbarTips: ...
+                            // lineWrapping: false
+                        },
+                        editor = new EasyMDE(options);
 
                     return editor;
                 }
