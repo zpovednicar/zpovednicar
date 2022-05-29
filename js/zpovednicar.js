@@ -221,10 +221,14 @@ sinner(function () {
                 useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
                     config.useMarkdown = new_value;
 
+                    page.resetTexts();
+                    await page.processTexts();
+
                     if (typeof page.editor === 'undefined') {
                         return;
                     }
 
+                    return; //TODO enable EasyMDE
                     if (new_value) {
                         page.editor = new EasyMDE(config.editorOptions);
                     } else {
@@ -538,13 +542,28 @@ sinner(function () {
                         link.removeAttribute('target');
                     });
                 },
-                wrapElementWords: function(page, el, highlight, hide, updateCounter) {
-                    updateCounter = updateCounter || false;
+                transformMarkdownSource: function (el) {
+                    if (!config.useMarkdown) {
+                        return;
+                    }
 
+                    let cloned = el.cloneNode(),
+                        source = el.innerHTML
+                            .replace('<br />', '\n')
+                            .replace('& gt;', '>')
+                            .replace('&gt;', '>')
+                            .replace('&lt;', '<')
+                            .replace('&quot;', '"')
+                            .trim();
+
+                    cloned.innerHTML = marked.parse(source);
+                    cloned.classList.add('markdownParsed');
+                    el.classList.add('markdownSource');
+                    el.after(cloned);
+                },
+                wrapElementWords: function (page, el, highlight, hide) {
                     if (config.useHiding && Utils.String.containsWord(el, hide)) {
-                        if (updateCounter) {
-                            page.counterWords++;
-                        }
+                        page.counterWords++;
                         el.parentElement.parentElement.classList.add('hiddenWord');
                         el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
                     }
@@ -1478,6 +1497,12 @@ sinner(function () {
             document.querySelectorAll('.highlightWord, .strikeWord').forEach(function (el) {
                 Utils.String.unwrap(el);
             });
+
+            document.querySelectorAll('.markdownParsed').forEach(function (el) {
+                el.remove();
+            });
+
+            Utils.Css.removeClass('markdownSource');
         }
 
         resetUnregistered() {
@@ -1546,11 +1571,12 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
-                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+                Utils.Dom.wrapElementWords(self, el, highlight, hide);
             });
         }
     }
@@ -1570,6 +1596,7 @@ sinner(function () {
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
+            return this; //TODO enable EasyMDE
             if (!isQuotes && config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1718,6 +1745,7 @@ sinner(function () {
                 }
             }
 
+            Utils.Dom.transformMarkdownSource(content);
             Utils.Dom.embedYoutube(content);
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1739,6 +1767,7 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
+                Utils.Dom.transformMarkdownSource(textEl);
                 Utils.Dom.embedYoutube(textEl);
             });
         }
@@ -1761,6 +1790,7 @@ sinner(function () {
             tables[tables.length === 5 ? 4 : 5]
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
+            return this; //TODO enable EasyMDE
             if (config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1850,11 +1880,14 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
-                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+                Utils.Dom.wrapElementWords(self, el, highlight, hide);
+                Utils.Dom.transformMarkdownSource(el);
+                Utils.Dom.embedYoutube(el);
             });
         }
 
@@ -1881,6 +1914,7 @@ sinner(function () {
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
 
+            return this; //TODO enable EasyMDE
             if (config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1931,11 +1965,14 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
-                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+                Utils.Dom.wrapElementWords(self, el, highlight, hide);
+                Utils.Dom.transformMarkdownSource(el);
+                Utils.Dom.embedYoutube(el);
             });
         }
     }

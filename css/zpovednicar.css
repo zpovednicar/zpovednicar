@@ -69,7 +69,8 @@ ul.sinnerList a, ul.sinnerList a:visited {
     color: #ffffcc;
 }
 
-#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser, tr.hiddenWord {
+#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser,
+tr.hiddenWord, .markdownSource {
     display: none;
 }
 
@@ -140,3 +141,6 @@ div.editor-toolbar {
     background-color: #90CCF1;
 }
 
+div.markdownParsed p {
+    margin-block-start: 0px;
+}
