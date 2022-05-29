@@ -538,18 +538,20 @@ sinner(function () {
                         link.removeAttribute('target');
                     });
                 },
-                wrapElementWords(page, selector, highlight, hide) {
-                    document.querySelectorAll(selector).forEach(function (el) {
-                        if (config.useHiding && Utils.String.containsWord(el, hide)) {
-                            page.counterWords++;
-                            el.parentElement.parentElement.classList.add('hiddenWord');
-                            el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
-                        }
+                wrapElementWords: function(page, el, highlight, hide, updateCounter) {
+                    updateCounter = updateCounter || false;
 
-                        if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
-                            el.innerHTML = Utils.String.wrapAll(el, highlight);
+                    if (config.useHiding && Utils.String.containsWord(el, hide)) {
+                        if (updateCounter) {
+                            page.counterWords++;
                         }
-                    });
+                        el.parentElement.parentElement.classList.add('hiddenWord');
+                        el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
+                    }
+
+                    if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
+                        el.innerHTML = Utils.String.wrapAll(el, highlight);
+                    }
                 }
             },
             String: {
@@ -1547,7 +1549,9 @@ sinner(function () {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'li.c3 a, li.c3l a', highlight, hide);
+            document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
+                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+            });
         }
     }
 
@@ -1849,7 +1853,9 @@ sinner(function () {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
+            document.querySelectorAll('div.guesttext').forEach(function (el) {
+                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+            });
         }
 
         resetAvatars() {
@@ -1928,7 +1934,9 @@ sinner(function () {
             let highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
+            document.querySelectorAll('div.guesttext').forEach(function (el) {
+                Utils.Dom.wrapElementWords(this, el, highlight, hide, true);
+            });
         }
     }
 
