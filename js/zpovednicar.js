@@ -48,45 +48,8 @@ sinner(function () {
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
-            editorOptions: { // https://github.com/Ionaru/easy-markdown-editor#options-list
-                // autoDownloadFontAwesome: true,
-                // autosave: {
-                //     enabled: true,
-                //     uniqueId: 'xxx',
-                //     text: '...saved...'
-                // },
-                // hideIcons: [],
-                // showIcons: [],
-                // renderingConfig: {
-                //     markedOptions: {
-                //         headerIds: false,
-                //         renderer: ...
-                //     },
-                //     sanitizerFunction: ...
-                // },
-                // previewRender: ...
-                // spellChecker: false,
-                // nativeSpellcheck: true,
-                // sideBySideFullscreen: false,
-                // status: ...
-                // theme: ...
-                // toolbar: ...
-                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
-                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
-                //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
-                // toolbarTips: ...
-                // lineWrapping: false
-            },
             hideDeleted: GM_getValue('sinner.hideDeleted', false),
             hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
-            parserOptions: { // https://marked.js.org/using_advanced#options
-            },
-            questions: new Map([
-                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
-                ['ul#hideUser', gettext.__('Really delete hidden user?')],
-                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
-                ['ul#hideWord', gettext.__('Really delete hidden term?')]
-            ]),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
@@ -125,7 +88,43 @@ sinner(function () {
                     height: 360,
                     pattern: 'https://img.youtube.com/vi/[id]/hqdefault.jpg'
                 }]
-            ])
+            ]),
+            questions: new Map([
+                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
+                ['ul#hideUser', gettext.__('Really delete hidden user?')],
+                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
+                ['ul#hideWord', gettext.__('Really delete hidden term?')]
+            ]),
+            parserOptions: { // https://marked.js.org/using_advanced#options
+                // headerIds: false,
+                // renderer: ...
+            },
+            editorOptions: { // https://github.com/Ionaru/easy-markdown-editor#options-list
+                // autoDownloadFontAwesome: true,
+                // autosave: {
+                //     enabled: true,
+                //     uniqueId: 'xxx',
+                //     text: '...saved...'
+                // },
+                // hideIcons: [],
+                // showIcons: [],
+                // renderingConfig: {
+                //     markedOptions: config.parserOptions,
+                //     sanitizerFunction: ...
+                // },
+                // previewRender: ...
+                // spellChecker: false,
+                // nativeSpellcheck: true,
+                // sideBySideFullscreen: false,
+                // status: ...
+                // theme: ...
+                // toolbar: ...
+                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
+                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
+                //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
+                // toolbarTips: ...
+                // lineWrapping: false
+            }
         },
         cssRules = new Map([
             ['homeHighlightUser', {
