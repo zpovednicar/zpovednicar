@@ -228,7 +228,6 @@ sinner(function () {
                         return;
                     }
 
-                    return; //TODO enable EasyMDE
                     if (new_value) {
                         page.editor = new EasyMDE(config.editorOptions);
                     } else {
@@ -543,10 +542,6 @@ sinner(function () {
                     });
                 },
                 transformMarkdownSource: function (el) {
-                    if (!config.useMarkdown) {
-                        return;
-                    }
-
                     let cloned = el.cloneNode(),
                         source = el.innerHTML
                             .replace('<br />', '\n')
@@ -1596,7 +1591,6 @@ sinner(function () {
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
-            return this; //TODO enable EasyMDE
             if (!isQuotes && config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1745,7 +1739,10 @@ sinner(function () {
                 }
             }
 
-            Utils.Dom.transformMarkdownSource(content);
+            if (config.useMarkdown) {
+                Utils.Dom.transformMarkdownSource(content);
+            }
+
             Utils.Dom.embedYoutube(content);
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1767,7 +1764,10 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
-                Utils.Dom.transformMarkdownSource(textEl);
+                if (config.useMarkdown) {
+                    Utils.Dom.transformMarkdownSource(textEl);
+                }
+
                 Utils.Dom.embedYoutube(textEl);
             });
         }
@@ -1790,7 +1790,6 @@ sinner(function () {
             tables[tables.length === 5 ? 4 : 5]
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
-            return this; //TODO enable EasyMDE
             if (config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1886,7 +1885,11 @@ sinner(function () {
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
-                Utils.Dom.transformMarkdownSource(el);
+
+                if (config.useMarkdown) {
+                    Utils.Dom.transformMarkdownSource(el);
+                }
+
                 Utils.Dom.embedYoutube(el);
             });
         }
@@ -1914,7 +1917,6 @@ sinner(function () {
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
 
-            return this; //TODO enable EasyMDE
             if (config.useMarkdown) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
@@ -1971,7 +1973,11 @@ sinner(function () {
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
-                Utils.Dom.transformMarkdownSource(el);
+
+                if (config.useMarkdown) {
+                    Utils.Dom.transformMarkdownSource(el);
+                }
+
                 Utils.Dom.embedYoutube(el);
             });
         }
