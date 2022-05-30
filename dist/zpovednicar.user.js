@@ -15,6 +15,7 @@
 // @resource     CSS_TABBY  https://cdn.jsdelivr.net/gh/cferdinandi/tabby@12/dist/css/tabby-ui.min.css
 // @resource     CSS_MODAL  https://cdn.zpovednicar.cz/userscripts/css/daypilot-modal-3.16.1.min.css
 // @resource     CSS_PICKER https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css
+// @resource     CSS_FONTS https://maxcdn.bootstrapcdn.com/font-awesome/latest/css/font-awesome.min.css
 // @resource     CSS_EASYMDE https://unpkg.com/easymde@2.16.1/dist/easymde.min.css
 // @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/userscripts/css/zpovednicar-1.6.min.css
 // @require      https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js

@@ -1,6 +1,6 @@
 'use strict';
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_FONTS', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
     GM_addStyle(GM_getResourceText(resource));
 }
 
@@ -100,7 +100,7 @@ sinner(function () {
                 // renderer: ...
             },
             editorOptions: { // https://github.com/Ionaru/easy-markdown-editor#options-list
-                // autoDownloadFontAwesome: true,
+                autoDownloadFontAwesome: false,
                 // autosave: {
                 //     enabled: true,
                 //     uniqueId: 'xxx',
@@ -362,7 +362,6 @@ sinner(function () {
                     });
 
                     el.prepend(link);
-                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
                 embedHighlightUserLink: function (el, nick, highlighted) {
                     highlighted = highlighted || false;
@@ -396,15 +395,34 @@ sinner(function () {
 
                     el.prepend(link);
                 },
-                embedUserLinks: async function (el, nick, highlight, hide) {
+                embedMarkdownParserLink: function (el) {
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: 'TODO MD TITLE'
+                        }),
+                        linkContent = Object.assign(document.createElement('span'), {
+                            className: 'fa fa-solid fa-text',
+                            textContent: 'TODO MD ICON'
+                        });
+
+                    link.appendChild(linkContent);
+                    el.prepend(link);
+                },
+                embedUserLinks: async function (el, nick, highlight, hide, markdownLink) {
                     let compressed = Utils.String.compress(nick, true, true, true);
 
                     if (config.useHiding) {
                         Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
+                        el.insertAdjacentHTML('afterbegin', '&nbsp;');
                     }
 
                     if (config.useHighlighting) {
                         Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
+                        el.insertAdjacentHTML('afterbegin', '&nbsp;');
+                    }
+
+                    if (markdownLink || false) {
+                        Utils.Dom.embedMarkdownParserLink(el);
                     }
                 },
                 embedYoutube: function (el) {
@@ -1660,7 +1678,7 @@ sinner(function () {
             // quotes header is rendered without userinfo (system account)
             if (!isQuotes) {
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1706,7 +1724,7 @@ sinner(function () {
                 }
 
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
             });
         }
 
@@ -1872,7 +1890,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
             });
         }
 
@@ -1960,7 +1978,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
             });
         }
 
