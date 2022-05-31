@@ -788,6 +788,9 @@ sinner(function () {
                             .replace(/&quot;/g, '"')
                             .replace(/&lt;/g, '<')
                             .replace(/&( )?gt;/g, '>')
+                            //TODO fix blockquotes nested by mistake
+                            // .replace(/(>)1+/g, '>')
+                            // .replace(/(<)1+/g, '<')
                             .replace(/<(\/)?b>/g, '**')
                             .replace(/<(\/)?i>/g, '*')
                             .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
