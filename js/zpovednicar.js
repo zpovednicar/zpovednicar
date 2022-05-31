@@ -387,7 +387,9 @@ sinner(function () {
                     }
 
                     if (new_value > 1) {
-                        page.editor = Utils.Dom.createMarkdownEditor();
+                        if (typeof page.editor !== 'object') {
+                            page.editor = Utils.Dom.createMarkdownEditor();
+                        }
                     } else if (typeof page.editor === 'object') {
                         page.editor.toTextArea();
                         page.editor.cleanup();
@@ -1836,16 +1838,9 @@ sinner(function () {
         initialize() {
             super.initialize();
 
-            let isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
-                tables = document.querySelectorAll('body > div > table');
+            let tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
-
-            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ROZHŘEŠENÍ:');
-
-            if (!isQuotes && config.useMarkdown > 1) {
-                this.editor = Utils.Dom.createMarkdownEditor();
-            }
 
             return this;
         }
@@ -1855,7 +1850,15 @@ sinner(function () {
                 return;
             }
 
-            await super.process();
+            super.process();
+
+            let isQuotes = window.location.pathname.startsWith('/zpovperl.php');
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ROZHŘEŠENÍ:');
+
+            if (!isQuotes && config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
         }
 
         processDeleted() {
@@ -2035,20 +2038,22 @@ sinner(function () {
         initialize() {
             super.initialize();
 
-            this.editor = false;
-
             let tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length === 5 ? 4 : 5]
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+
+            return this;
+        }
+
+        async process() {
+            super.process();
 
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
 
             if (config.useMarkdown > 1) {
                 this.editor = Utils.Dom.createMarkdownEditor();
             }
-
-            return this;
         }
 
         processAvatars() {
@@ -2171,13 +2176,17 @@ sinner(function () {
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
 
+            return this;
+        }
+
+        async process() {
+            super.process();
+
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
 
             if (config.useMarkdown > 1) {
                 this.editor = Utils.Dom.createMarkdownEditor();
             }
-
-            return this;
         }
 
         async processNicks() {
