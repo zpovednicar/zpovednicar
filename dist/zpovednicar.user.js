@@ -25,6 +25,7 @@
 // @require      https://cdn.zpovednicar.cz/userscripts/js/papaparse-5.0.2.min.js
 // @require      https://cdn.zpovednicar.cz/userscripts/js/FileSaver-2.0.4.min.js
 // @require      https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js
 // @require      https://unpkg.com/mermaid@9.1.1/dist/mermaid.min.js
 // @require      https://cdn.jsdelivr.net/npm/marked@4.0.16/lib/marked.umd.min.js
 // @require      https://unpkg.com/easymde@2.16.1/dist/easymde.min.js

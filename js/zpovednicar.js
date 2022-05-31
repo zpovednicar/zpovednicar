@@ -105,11 +105,24 @@ sinner(function () {
                 ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
                 ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ]),
-            parserOptions: { // https://marked.js.org/using_advanced#options
-                // headerIds: false,
-                // renderer: ...
+            sanitizerOptions: {
+                // https://github.com/cure53/DOMPurify#can-i-configure-dompurify
+                // https://github.com/cure53/DOMPurify/tree/main/demos#what-is-this
+                //TODO enable the most strict and working one after Mermaid implementation
+                // USE_PROFILES: {html: true},
+                // USE_PROFILES: {html: true, svg: true}
+                // USE_PROFILES: {html: true, svg: true, svgFilters: true}
+                FORBID_TAGS: ['style'],
+                FORBID_ATTR: ['style'],
+                ALLOW_ARIA_ATTR: false,
+                ALLOW_DATA_ATTR: false
             },
-            editorOptions: { // https://github.com/Ionaru/easy-markdown-editor#options-list
+            parserOptions: {
+                // https://marked.js.org/using_advanced#options
+                headerIds: false
+            },
+            editorOptions: {
+                // https://github.com/Ionaru/easy-markdown-editor#options-list
                 autoDownloadFontAwesome: false,
                 // autosave: {
                 //     enabled: true,
@@ -118,14 +131,18 @@ sinner(function () {
                 // },
                 // hideIcons: [],
                 // showIcons: [],
-                // renderingConfig: {
-                //     markedOptions: config.parserOptions,
-                //     sanitizerFunction: ...
-                // },
+                renderingConfig: {
+                    headerIds: false,
+                    sanitizerFunction: function (dirty) {
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // return DOMPurify.sanitize(dirty);
+                        return DOMPurify.sanitize(dirty, config.sanitizerOptions);
+                    }
+                },
                 // previewRender: ...
-                // spellChecker: false,
+                spellChecker: false,
                 // nativeSpellcheck: true,
-                // sideBySideFullscreen: false,
+                sideBySideFullscreen: false,
                 // status: ...
                 // theme: ...
                 // toolbar: ...
@@ -635,9 +652,15 @@ sinner(function () {
                             .replace(/<(\/)?i>/g, '*')
                             .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
                             .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
-                            .trim();
+                            .trim(),
+                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
+                        // dirty = marked.parse(source),
+                        dirty = marked.parse(source, config.parserOptions),
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // clean = DOMPurify.sanitize(dirty);
+                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
 
-                    cloned.innerHTML = marked.parse(source);
+                    cloned.innerHTML = clean;
                     cloned.classList.add('markdownParsed');
                     el.classList.add('markdownSource');
                     el.after(cloned);
@@ -1479,6 +1502,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
 
+            DOMPurify.setConfig(config.sanitizerOptions);
             marked.setOptions(config.parserOptions);
 
             return this;
