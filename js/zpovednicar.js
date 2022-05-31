@@ -124,13 +124,22 @@ sinner(function () {
             editorOptions: {
                 // https://github.com/Ionaru/easy-markdown-editor#options-list
                 autoDownloadFontAwesome: false,
-                // autosave: {
-                //     enabled: true,
-                //     uniqueId: 'xxx',
-                //     text: '...saved...'
-                // },
-                // hideIcons: [],
-                // showIcons: [],
+                autosave: {
+                    enabled: true,
+                    text: gettext.__('saved: '),
+                    timeFormat: {
+                        locale: 'cs-CZ',
+                        format: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        },
+                    }
+                },
+                unorderedListStyle: '-',
+                forceSync: true,
+                indentWithTabs: false,
+                // lineWrapping: false
                 renderingConfig: {
                     headerIds: false,
                     sanitizerFunction: function (dirty) {
@@ -139,18 +148,138 @@ sinner(function () {
                         return DOMPurify.sanitize(dirty, config.sanitizerOptions);
                     }
                 },
+                placeholder: gettext.__('start typing here...'),
                 // previewRender: ...
+                promptTexts: {
+                    image: gettext.__('URL of the image:'),
+                    link: gettext.__('URL for the link:')
+                },
                 spellChecker: false,
-                // nativeSpellcheck: true,
                 sideBySideFullscreen: false,
-                // status: ...
-                // theme: ...
-                // toolbar: ...
-                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-icons
-                //     https://github.com/Ionaru/easy-markdown-editor#toolbar-customization
-                //     https://github.com/Ionaru/easy-markdown-editor/blob/master/src/js/easymde.js#L1474
-                // toolbarTips: ...
-                // lineWrapping: false
+                status: ['autosave'],
+                toolbar: [
+                    {
+                        name: 'bold',
+                        action: EasyMDE.toggleBold,
+                        className: 'fa fa-bold',
+                        title: gettext.__('Bold')
+                    },
+                    {
+                        name: 'italic',
+                        action: EasyMDE.toggleItalic,
+                        className: 'fa fa-italic',
+                        title: gettext.__('Italic')
+                    },
+                    {
+                        name: 'strikethrough',
+                        action: EasyMDE.toggleStrikethrough,
+                        className: 'fa fa-strikethrough',
+                        title: gettext.__('Strikethrough')
+                    },
+                    {
+                        name: 'heading',
+                        action: EasyMDE.toggleHeadingSmaller,
+                        className: 'fa fa-header fa-heading',
+                        title: gettext.__('Heading')
+                    },
+                    '|',
+                    {
+                        name: 'unordered-list',
+                        action: EasyMDE.toggleUnorderedList,
+                        className: 'fa fa-list-ul',
+                        title: gettext.__('Generic List')
+                    },
+                    {
+                        name: 'ordered-list',
+                        action: EasyMDE.toggleOrderedList,
+                        className: 'fa fa-list-ol',
+                        title: gettext.__('Numbered List')
+                    },
+                    {
+                        name: 'quote',
+                        action: EasyMDE.toggleBlockquote,
+                        className: 'fa fa-quote-left',
+                        title: gettext.__('Quote')
+                    },
+                    {
+                        name: 'code',
+                        action: EasyMDE.toggleCodeBlock,
+                        className: 'fa fa-code',
+                        title: gettext.__('Code')
+                    },
+                    '|',
+                    {
+                        name: 'link',
+                        action: EasyMDE.drawLink,
+                        className: 'fa fa-link',
+                        title: gettext.__('Create Link')
+                    },
+                    {
+                        name: 'image',
+                        action: EasyMDE.drawImage,
+                        className: 'fa fa-image',
+                        title: gettext.__('Insert Image')
+                    },
+                    {
+                        name: 'table',
+                        action: EasyMDE.drawTable,
+                        className: 'fa fa-table',
+                        title: gettext.__('Insert Table')
+                    },
+                    {
+                        name: 'horizontal-rule',
+                        action: EasyMDE.drawHorizontalRule,
+                        className: 'fa fa-minus',
+                        title: gettext.__('Insert Horizontal Line')
+                    },
+                    '|',
+                    {
+                        name: 'preview',
+                        action: EasyMDE.togglePreview,
+                        className: 'fa fa-eye',
+                        noDisable: true,
+                        title: gettext.__('Toggle Preview')
+                    },
+                    {
+                        name: 'side-by-side',
+                        action: EasyMDE.toggleSideBySide,
+                        className: 'fa fa-columns',
+                        noDisable: true,
+                        noMobile: true,
+                        title: gettext.__('Toggle Side by Side')
+                    },
+                    {
+                        name: 'fullscreen',
+                        action: EasyMDE.toggleFullScreen,
+                        className: 'fa fa-arrows-alt',
+                        noDisable: true,
+                        noMobile: true,
+                        title: gettext.__('Toggle Fullscreen')
+                    },
+                    '|',
+                    {
+                        name: 'undo',
+                        action: EasyMDE.undo,
+                        className: 'fa fa-undo',
+                        noDisable: true,
+                        title: gettext.__('Undo')
+                    },
+                    {
+                        name: 'redo',
+                        action: EasyMDE.redo,
+                        className: 'fa fa-repeat fa-redo',
+                        noDisable: true,
+                        title: gettext.__('Redo')
+                    },
+                    '|',
+                    {
+                        name: 'guide',
+                        action: 'https://www.markdownguide.org/basic-syntax/',
+                        className: 'fa fa-question-circle',
+                        noDisable: true,
+                        title: gettext.__('Markdown Guide')
+                    }
+                ]
             }
         },
         cssRules = new Map([
@@ -258,7 +387,7 @@ sinner(function () {
                     }
 
                     if (new_value > 1) {
-                        page.editor = new EasyMDE(config.editorOptions);
+                        page.editor = Utils.Dom.createMarkdownEditor();
                     } else if (typeof page.editor === 'object') {
                         page.editor.toTextArea();
                         page.editor.cleanup();
@@ -360,6 +489,15 @@ sinner(function () {
                 }
             },
             Dom: {
+                createMarkdownEditor: function () {
+                    let params = new URLSearchParams(window.location.search),
+                        options = config.editorOptions;
+
+                    options.autosave.uniqueId = params.has('statusik') ? 'post_' + params.get('statusik') :
+                        params.has('kdo') ? 'profile_' + params.get('kdo') : 'kniha';
+
+                    return new EasyMDE(options);
+                },
                 embedHideUserLink: function (el, nick, hidden) {
                     hidden = hidden || false;
 
@@ -451,7 +589,7 @@ sinner(function () {
                             e.target.classList.add('fa-eye')
                             e.target.parentElement.setAttribute('title', gettext.__('Show text editor'));
                         } else {
-                            page.editor = new EasyMDE(config.editorOptions);
+                            page.editor = Utils.Dom.createMarkdownEditor();
                             e.target.classList.remove('fa-eye')
                             e.target.classList.add('fa-eye-slash')
                             e.target.parentElement.setAttribute('title', gettext.__('Hide text editor'));
@@ -1706,7 +1844,7 @@ sinner(function () {
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ROZHŘEŠENÍ:');
 
             if (!isQuotes && config.useMarkdown > 1) {
-                this.editor = new EasyMDE(config.editorOptions);
+                this.editor = Utils.Dom.createMarkdownEditor();
             }
 
             return this;
@@ -1907,7 +2045,7 @@ sinner(function () {
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
 
             if (config.useMarkdown > 1) {
-                this.editor = new EasyMDE(config.editorOptions);
+                this.editor = Utils.Dom.createMarkdownEditor();
             }
 
             return this;
@@ -2036,7 +2174,7 @@ sinner(function () {
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
 
             if (config.useMarkdown > 1) {
-                this.editor = new EasyMDE(config.editorOptions);
+                this.editor = Utils.Dom.createMarkdownEditor();
             }
 
             return this;
