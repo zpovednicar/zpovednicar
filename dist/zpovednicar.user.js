@@ -15,6 +15,7 @@
 // @resource     CSS_TABBY  https://cdn.jsdelivr.net/gh/cferdinandi/tabby@12/dist/css/tabby-ui.min.css
 // @resource     CSS_MODAL  https://cdn.zpovednicar.cz/userscripts/css/daypilot-modal-3.16.1.min.css
 // @resource     CSS_PICKER https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css
+// @resource     CSS_EMOJI https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.css
 // @resource     CSS_EASYMDE https://unpkg.com/easymde@2.16.1/dist/easymde.min.css
 // @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/userscripts/css/zpovednicar-1.6.min.css
 // @require      https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js
@@ -27,6 +28,7 @@
 // @require      https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js
 // @require      https://unpkg.com/mermaid@9.1.1/dist/mermaid.min.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.js
 // @require      https://cdn.jsdelivr.net/npm/marked@4.0.16/lib/marked.umd.min.js
 // @require      https://unpkg.com/easymde@2.16.1/dist/easymde.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gettext.js/1.1.1/gettext.iife.min.js

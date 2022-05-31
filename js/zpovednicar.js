@@ -5,7 +5,7 @@ document.getElementsByTagName('head')[0].appendChild(Object.assign(document.crea
     href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
 }));
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EMOJI', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
     GM_addStyle(GM_getResourceText(resource));
 }
 
@@ -149,7 +149,6 @@ sinner(function () {
                     }
                 },
                 placeholder: gettext.__('start typing here...'),
-                // previewRender: ...
                 promptTexts: {
                     image: gettext.__('URL of the image:'),
                     link: gettext.__('URL for the link:')
@@ -495,6 +494,7 @@ sinner(function () {
                     let params = new URLSearchParams(window.location.search),
                         options = config.editorOptions;
 
+                    options.previewRender = Utils.String.parseMarkdown;
                     options.autosave.uniqueId = params.has('statusik') ? 'post_' + params.get('statusik') :
                         params.has('kdo') ? 'profile_' + params.get('kdo') : 'kniha';
 
@@ -783,27 +783,9 @@ sinner(function () {
                     });
                 },
                 transformMarkdownSource: function (el) {
-                    let cloned = el.cloneNode(),
-                        source = el.innerHTML.trim()
-                            .replace(/&quot;/g, '"')
-                            .replace(/&lt;/g, '<')
-                            .replace(/&( )?gt;/g, '>')
-                            //TODO fix blockquotes nested by mistake
-                            // .replace(/(>)\1+/g, '>')
-                            // .replace(/(<)\1+/g, '<')
-                            .replace(/<(\/)?b>/g, '**')
-                            .replace(/<(\/)?i>/g, '*')
-                            .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
-                            .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
-                            .trim(),
-                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
-                        // dirty = marked.parse(source),
-                        dirty = marked.parse(source, config.parserOptions),
-                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
-                        // clean = DOMPurify.sanitize(dirty);
-                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
+                    let cloned = el.cloneNode();
 
-                    cloned.innerHTML = clean;
+                    cloned.innerHTML = Utils.String.parseMarkdown(el.innerHTML);
                     cloned.classList.add('markdownParsed');
                     el.classList.add('markdownSource');
                     el.after(cloned);
@@ -854,6 +836,30 @@ sinner(function () {
                 },
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                },
+                parseMarkdown: function(text) {
+                    let source = text.trim()
+                            .replace(/&quot;/g, '"')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&( )?gt;/g, '>')
+                            //TODO fix blockquotes nested by mistake
+                            // .replace(/(>)\1+/g, '>')
+                            // .replace(/(<)\1+/g, '<')
+                            .replace(/<(\/)?b>/g, '**')
+                            .replace(/<(\/)?i>/g, '*')
+                            .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
+                            .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
+                            .trim(),
+                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
+                        // dirty = marked.parse(source),
+                        markdown = marked.parse(source, config.parserOptions),
+                        emoji = new EmojiConvertor(),
+                        dirty = emoji.replace_colons(markdown),
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // clean = DOMPurify.sanitize(dirty);
+                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
+
+                    return clean;
                 },
                 rc4: function (key, str) {
                     let s = [],
