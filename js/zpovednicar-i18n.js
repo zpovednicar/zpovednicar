@@ -76,7 +76,13 @@ const sinnerI18n = {
             'Skryté výrazy: %1',
             'Skrytých výrazů: %1'
         ],
-        'Use Markdown syntax/editor': 'Používat syntaxi/editor Markdown'
+        'Use formatted text': 'Používat formátování textu',
+        'Format selected only': 'Jen vybrané texty',
+        'Format everything': 'Všechny texty',
+        'Show formatted text': 'Zobrazit formátovaný text',
+        'Show original text': 'Zobrazit původní text',
+        'Show text editor': 'Zobrazit textový editor',
+        'Hide text editor': 'Skrýt textový editor'
     },
     sk: {
         '': {
@@ -155,6 +161,12 @@ const sinnerI18n = {
             'Skryté výrazy: %1',
             'Skrytých výrazov: %1'
         ],
-        'Use Markdown syntax/editor': 'Používať syntax/editor Markdown'
+        'Use formatted text': 'Používať formátovanie textu',
+        'Format selected only': 'Len vybrané texty',
+        'Format everything': 'Všetky texty',
+        'Show formatted text': 'Zobraziť formátovaný text',
+        'Show original text': 'Zobraziť pôvodný text',
+        'Show text editor': 'Zobraziť textový editor',
+        'Hide text editor': 'Skryť textový editor'
     }
 };

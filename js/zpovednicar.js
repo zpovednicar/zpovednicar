@@ -1,6 +1,11 @@
 'use strict';
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_FONTS', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
+document.getElementsByTagName('head')[0].appendChild(Object.assign(document.createElement('link'), {
+    rel: 'stylesheet',
+    href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
+}));
+
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
     GM_addStyle(GM_getResourceText(resource));
 }
 
@@ -54,7 +59,12 @@ sinner(function () {
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
-            useMarkdown: GM_getValue('sinner.useMarkdown', true),
+            useMarkdown: GM_getValue('sinner.useMarkdown', 2),
+            useMarkdowns: new Map([
+                [0, gettext.__('-- do not use --')],
+                [1, gettext.__('Format selected only')],
+                [2, gettext.__('Format everything')]
+            ]),
             youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 1),
             youtubeThumbnails: new Map([
                 [0, {
@@ -221,16 +231,18 @@ sinner(function () {
                 useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
                     config.useMarkdown = new_value;
 
+                    page.resetNicks();
                     page.resetTexts();
+                    await page.processNicks();
                     await page.processTexts();
 
                     if (typeof page.editor === 'undefined') {
                         return;
                     }
 
-                    if (new_value) {
+                    if (new_value > 1) {
                         page.editor = new EasyMDE(config.editorOptions);
-                    } else {
+                    } else if (typeof page.editor === 'object') {
                         page.editor.toTextArea();
                         page.editor.cleanup();
                         page.editor = null;
@@ -314,11 +326,12 @@ sinner(function () {
                         });
                     });
                 },
-                removeClass: function (classNames) {
+                removeClass: function (classNames, parentNode) {
                     classNames = typeof classNames === 'string' ? [classNames] : classNames;
+                    parentNode = parentNode || document;
 
                     classNames.forEach(function (className) {
-                        document.querySelectorAll('.' + className).forEach(function (el) {
+                        parentNode.querySelectorAll('.' + className).forEach(function (el) {
                             el.classList.remove(className);
                         });
                     });
@@ -349,7 +362,6 @@ sinner(function () {
                             alt: gettext.__('Hide nick')
                         });
 
-                    link.appendChild(linkContent);
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
@@ -361,7 +373,9 @@ sinner(function () {
                         }
                     });
 
+                    link.appendChild(linkContent);
                     el.prepend(link);
+                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
                 embedHighlightUserLink: function (el, nick, highlighted) {
                     highlighted = highlighted || false;
@@ -381,7 +395,6 @@ sinner(function () {
                             alt: gettext.__('Highlight nick')
                         });
 
-                    link.appendChild(linkContent);
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
@@ -393,36 +406,89 @@ sinner(function () {
                         }
                     });
 
+                    link.appendChild(linkContent);
                     el.prepend(link);
+                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
-                embedMarkdownParserLink: function (el) {
-                    let link = Object.assign(document.createElement('a'), {
+                embedMarkdownEditorSwitcher: function (text) {
+                    let parent = document.querySelector('textarea').parentElement,
+                        link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: 'TODO MD TITLE'
+                            title: (config.useMarkdown > 1 ? gettext.__('Hide text editor') : gettext.__('Show text editor'))
                         }),
                         linkContent = Object.assign(document.createElement('span'), {
-                            className: 'fa fa-solid fa-text',
-                            textContent: 'TODO MD ICON'
+                            className: 'fas ' + (config.useMarkdown > 1 ? 'fa-eye-slash' : 'fa-eye')
                         });
+
+                    parent.innerHTML = Utils.String.wrapAll(parent, [text], page.editorSwitcher);
+                    link.appendChild(linkContent);
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+
+                        if (e.target.classList.contains('fa-eye-slash')) {
+                            page.editor.toTextArea();
+                            page.editor.cleanup();
+                            page.editor = null;
+                            e.target.classList.remove('fa-eye-slash')
+                            e.target.classList.add('fa-eye')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show text editor'));
+                        } else {
+                            page.editor = new EasyMDE(config.editorOptions);
+                            e.target.classList.remove('fa-eye')
+                            e.target.classList.add('fa-eye-slash')
+                            e.target.parentElement.setAttribute('title', gettext.__('Hide text editor'));
+                        }
+                    });
+
+                    let switcher = document.querySelector('span.' + page.editorSwitcher);
+
+                    switcher.insertAdjacentHTML('afterbegin', '&nbsp;');
+                    switcher.prepend(link);
+
+                },
+                embedMarkdownParserLink: function (el, textEl) {
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: (config.useMarkdown > 1 ? gettext.__('Show original text') : gettext.__('Show formatted text'))
+                        }),
+                        linkContent = Object.assign(document.createElement('span'), {
+                            className: 'fas ' + (config.useMarkdown > 1 ? 'fa-eye-slash' : 'fa-eye')
+                        });
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+
+                        if (e.target.classList.contains('fa-eye-slash')) {
+                            textEl.parentElement.querySelector('.markdownParsed').remove();
+                            textEl.classList.remove('markdownSource');
+                            e.target.classList.remove('fa-eye-slash')
+                            e.target.classList.add('fa-eye')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show formatted text'));
+                        } else {
+                            Utils.Dom.transformMarkdownSource(textEl);
+                            e.target.classList.remove('fa-eye')
+                            e.target.classList.add('fa-eye-slash')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show original text'));
+                        }
+                    });
 
                     link.appendChild(linkContent);
                     el.prepend(link);
                 },
-                embedUserLinks: async function (el, nick, highlight, hide, markdownLink) {
+                embedUserLinks: async function (el, nick, highlight, hide, markdownEl) {
                     let compressed = Utils.String.compress(nick, true, true, true);
 
                     if (config.useHiding) {
                         Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
-                        el.insertAdjacentHTML('afterbegin', '&nbsp;');
                     }
 
                     if (config.useHighlighting) {
                         Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
-                        el.insertAdjacentHTML('afterbegin', '&nbsp;');
                     }
 
-                    if (markdownLink || false) {
-                        Utils.Dom.embedMarkdownParserLink(el);
+                    if (config.useMarkdown > 0 && markdownEl) {
+                        Utils.Dom.embedMarkdownParserLink(el, markdownEl);
                     }
                 },
                 embedYoutube: function (el) {
@@ -561,12 +627,14 @@ sinner(function () {
                 },
                 transformMarkdownSource: function (el) {
                     let cloned = el.cloneNode(),
-                        source = el.innerHTML
-                            .replace('<br />', '\n')
-                            .replace('& gt;', '>')
-                            .replace('&gt;', '>')
-                            .replace('&lt;', '<')
-                            .replace('&quot;', '"')
+                        source = el.innerHTML.trim()
+                            .replace(/&quot;/g, '"')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&( )?gt;/g, '>')
+                            .replace(/<(\/)?b>/g, '**')
+                            .replace(/<(\/)?i>/g, '*')
+                            .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
+                            .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
                             .trim();
 
                     cloned.innerHTML = marked.parse(source);
@@ -1033,14 +1101,17 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    gettext.__('Use Markdown syntax/editor') +
+                    '<span class="fas fa-eye"></span>&nbsp;' +
+                    gettext.__('Use formatted text') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<input type="radio" name="useMarkdown" id="useMarkdownYes"' + (config.useMarkdown ? ' checked' : '') + ' value="1">&nbsp;' +
-                    '<label for="useMarkdownYes">' + gettext.__('Yes') + '</label>&nbsp;' +
-                    '<input type="radio" name="useMarkdown" id="useMarkdownNo"' + (config.useMarkdown ? '' : ' checked') + ' value="0">&nbsp;' +
-                    '<label for="useMarkdownNo">' + gettext.__('No') + '</label>' +
+                    '<select id="useMarkdown">';
+                config.useMarkdowns.forEach(function (label, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.useMarkdown ? ' selected' : '') + '>' + label + '</option>';
+                })
+                modalContent +=
+                    '</select>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
@@ -1113,6 +1184,9 @@ sinner(function () {
                 document.getElementById('youtubeThumbnail').onchange = function (e) {
                     GM_setValue('sinner.youtubeThumbnail', parseInt(e.target.value))
                 };
+                document.getElementById('useMarkdown').onchange = function (e) {
+                    GM_setValue('sinner.useMarkdown', parseInt(e.target.value))
+                };
 
                 document.querySelectorAll('input[name="useHighlighting"]').forEach(function (input) {
                     input.addEventListener('change', function (e) {
@@ -1142,11 +1216,6 @@ sinner(function () {
                 document.querySelectorAll('input[name="transformAvatars"]').forEach(function (input) {
                     input.addEventListener('change', function (e) {
                         GM_setValue('sinner.transformAvatars', Boolean(parseInt(e.target.value)))
-                    });
-                });
-                document.querySelectorAll('input[name="useMarkdown"]').forEach(function (input) {
-                    input.addEventListener('change', function (e) {
-                        GM_setValue('sinner.useMarkdown', Boolean(parseInt(e.target.value)))
                     });
                 });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
@@ -1319,11 +1388,12 @@ sinner(function () {
             this.counterNicks = 0;
             this.counterWords = 0;
             this.countersContainer = 'countersContainer';
+            this.editorSwitcher = 'editorSwitcher';
         }
 
         displayCounters() {
             let self = this,
-                container = document.getElementById(this.countersContainer),
+                container = document.getElementById(self.countersContainer),
                 links = new Map([
                     ['counterWords', {
                         action: 'resetTexts',
@@ -1609,7 +1679,9 @@ sinner(function () {
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
-            if (!isQuotes && config.useMarkdown) {
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ROZHŘEŠENÍ:');
+
+            if (!isQuotes && config.useMarkdown > 1) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
 
@@ -1658,16 +1730,16 @@ sinner(function () {
                 isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
-                parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
-                    .parentElement.parentElement.parentElement.parentElement,
+                parent = el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement.parentElement,
                 info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
 
             if (config.useHighlighting && highlight.includes(nick)) {
-                if (!parent.classList.contains('highlightUser')) {
-                    parent.classList.add('highlightUser');
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
                 }
             } else if (config.useHiding && hide.includes(nick)) {
                 if (!el.classList.contains('strikeUser')) {
@@ -1678,7 +1750,7 @@ sinner(function () {
             // quotes header is rendered without userinfo (system account)
             if (!isQuotes) {
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, parent.previousElementSibling.firstElementChild);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1724,7 +1796,7 @@ sinner(function () {
                 }
 
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, container2.firstElementChild);
             });
         }
 
@@ -1757,7 +1829,7 @@ sinner(function () {
                 }
             }
 
-            if (config.useMarkdown) {
+            if (config.useMarkdown > 1) {
                 Utils.Dom.transformMarkdownSource(content);
             }
 
@@ -1782,7 +1854,7 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
-                if (config.useMarkdown) {
+                if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(textEl);
                 }
 
@@ -1808,7 +1880,9 @@ sinner(function () {
             tables[tables.length === 5 ? 4 : 5]
                 .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
 
-            if (config.useMarkdown) {
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
+
+            if (config.useMarkdown > 1) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
 
@@ -1890,7 +1964,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
         }
 
@@ -1904,7 +1978,7 @@ sinner(function () {
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
 
-                if (config.useMarkdown) {
+                if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(el);
                 }
 
@@ -1935,7 +2009,9 @@ sinner(function () {
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
 
-            if (config.useMarkdown) {
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
+
+            if (config.useMarkdown > 1) {
                 this.editor = new EasyMDE(config.editorOptions);
             }
 
@@ -1978,7 +2054,7 @@ sinner(function () {
                 }
 
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, true);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
         }
 
@@ -1992,7 +2068,7 @@ sinner(function () {
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
 
-                if (config.useMarkdown) {
+                if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(el);
                 }
 

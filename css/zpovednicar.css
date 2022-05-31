@@ -24,7 +24,7 @@
     width: 260px;
 }
 
-#enforceDomain, #youtubeThumbnail {
+#enforceDomain, #youtubeThumbnail, #useMarkdown {
     width: 100%;
 }
 
@@ -93,6 +93,10 @@ span.userLinks {
 
 span.userLinks img {
     vertical-align: text-bottom;
+}
+
+span.fa, span.fas {
+    color: #90CCF1;
 }
 
 .embed-container {
