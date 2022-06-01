@@ -109,7 +109,28 @@ sinner(function () {
                 pickerOptions: {
                     // showCategoryTabs: false,
                     showVariants: false,
-                    emojiSize: '2em'
+                    emojiSize: '2em',
+                    i18n: {
+                        'categories.activities': gettext.__('Activities'),
+                        'categories.animals-nature': gettext.__('Animals & Nature'),
+                        'categories.custom': gettext.__('Custom'),
+                        'categories.flags': gettext.__('Flags'),
+                        'categories.food-drink': gettext.__('Food & Drink'),
+                        'categories.objects': gettext.__('Objects'),
+                        'categories.people-body': gettext.__('People & Body'),
+                        'categories.recents': gettext.__('Recently Used'),
+                        'categories.smileys-emotion': gettext.__('Smileys & Emotion'),
+                        'categories.symbols': gettext.__('Symbols'),
+                        'categories.travel-places': gettext.__('Travel & Places'),
+                        'error.load': gettext.__('Failed to load emojis'),
+                        'recents.clear': gettext.__('Clear recent emojis'),
+                        'recents.none': gettext.__("You haven't selected any emojis yet."),
+                        'retry': gettext.__('Try again'),
+                        'search.clear': gettext.__('Clear search'),
+                        'search.error': gettext.__('Failed to search emojis'),
+                        'search.notFound': gettext.__('No results found'),
+                        'search': gettext.__('Search emojis...')
+                    }
                 },
                 popupOptions: {
                     className: 'picmoPopup',
