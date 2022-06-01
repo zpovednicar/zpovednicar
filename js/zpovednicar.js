@@ -53,7 +53,7 @@ sinner(function () {
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
-            hideDeleted: GM_getValue('sinner.hideDeleted', false),
+            hideDeleted: GM_getValue('sinner.hideDeleted', true),
             hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
