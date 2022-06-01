@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         Zpovědničář
+// @name         Zpovědničář BETA
 // @description  Doplňková funkcionalita stránek pro všechny smutné lidičky a pro ty, kdo jim chtějí pomoci
 // @license      http://www.wtfpl.net/about/
 // @version      1.6.1
