@@ -930,7 +930,7 @@ sinner(function () {
                         noEmoticons = marked.emojiConvertor.replace_emoticons(markdown),
                         noColons = marked.emojiConvertor.replace_colons(noEmoticons),
                         dirty = marked.emojiConvertor.replace_unified(noColons)
-                            .replace(/&#\d+; &#\d+;/g, function (encoded) {
+                            .replace(/&#\d+;/g, function (encoded) {
                                 return decodeURIComponent(encoded);
                             }),
                         //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
