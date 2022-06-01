@@ -1,0 +1,31 @@
+name: Production Deployment
+on:
+  push:
+    branches:
+      - 'beta'
+jobs:
+  web-deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get latest code
+        uses: actions/checkout@v3
+
+      - name: Sync files
+        uses: SamKirkland/FTP-Deploy-Action@4.3.0
+        with:
+          server: ${{ secrets.PROD_FTP_SERVER }}
+          server-dir: ${{ secrets.PROD_FTP_BETA_PATH }}
+          username: ${{ secrets.PROD_FTP_USER }}
+          password: ${{ secrets.PROD_FTP_PWD }}
+          local-dir: ./dist/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            .editorconfig
+            DOCKER*
+            Docker*
+            docker*
+            output.log
+            LICENSE.txt
+            README.md
