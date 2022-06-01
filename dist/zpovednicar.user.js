@@ -29,6 +29,8 @@
 // @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js
 // @require      https://unpkg.com/mermaid@9.1.1/dist/mermaid.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.js
+// @require      https://unpkg.com/picmo@5.1.1/dist/umd/picmo.js
+// @require      https://unpkg.com/@picmo/popup-picker@5.1.1/dist/umd/picmo-popup.js
 // @require      https://cdn.jsdelivr.net/npm/marked@4.0.16/lib/marked.umd.min.js
 // @require      https://unpkg.com/easymde@2.16.1/dist/easymde.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/gettext.js/1.1.1/gettext.iife.min.js

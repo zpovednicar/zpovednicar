@@ -105,7 +105,34 @@ sinner(function () {
                 ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
                 ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ]),
+            emoji: {
+                pickerOptions: {
+                    // showCategoryTabs: false,
+                    showVariants: false,
+                    emojiSize: '2em'
+                },
+                popupOptions: {
+                    className: 'picmoPopup',
+                    // https://popper.js.org/docs/v2/constructors/#options
+                    // position: 'auto'
+                    // position: 'auto-start'
+                    position: 'auto-end'
+                    // position: 'top'
+                    // position: 'top-start'
+                    // position: 'top-end'
+                    // position: 'bottom'
+                    // position: 'bottom-start'
+                    // position: 'bottom-end'
+                    // position: 'right'
+                    // position: 'right-start'
+                    // position: 'right-end'
+                    // position: 'left'
+                    // position: 'left-start'
+                    // position: 'left-end'
+                }
+            },
             mermaidOptions: {
+                // https://mermaid.live/
                 startOnLoad: false
             },
             sanitizerOptions: {
@@ -277,6 +304,25 @@ sinner(function () {
                     },
                     '|',
                     {
+                        name: 'emoji',
+                        action: function (editor) {
+                            editor.emojiPicker.open();
+                        },
+                        className: 'fa-regular fa-face-smile',
+                        attributes: {
+                            id: 'emojiTrigger'
+                        },
+                        // noDisable: true,
+                        title: gettext.__('Emojis')
+                    },
+                    {
+                        name: 'mermaid',
+                        action: 'https://mermaid.live/',
+                        className: 'fas fa-diagram-project',
+                        noDisable: true,
+                        title: gettext.__('Mermaid live editor')
+                    },
+                    {
                         name: 'guide',
                         action: 'https://www.markdownguide.org/basic-syntax/',
                         className: 'fa fa-question-circle',
@@ -395,6 +441,8 @@ sinner(function () {
                             page.editor = Utils.Dom.createMarkdownEditor();
                         }
                     } else if (typeof page.editor === 'object') {
+                        page.editor.emojiPicker.destroy();
+                        page.editor.emojiPicker = null;
                         page.editor.toTextArea();
                         page.editor.cleanup();
                         page.editor = null;
@@ -502,7 +550,24 @@ sinner(function () {
                     options.autosave.uniqueId = params.has('statusik') ? 'post_' + params.get('statusik') :
                         params.has('kdo') ? 'profile_' + params.get('kdo') : 'kniha';
 
-                    return new EasyMDE(options);
+                    let editor = new EasyMDE(options),
+                        popupTrigger = document.getElementById('emojiTrigger'),
+                        popupOptions = Object.assign(config.emoji.popupOptions, {
+                            referenceElement: popupTrigger,
+                            triggerElement: popupTrigger
+                        });
+
+                    editor.emojiPicker = picmoPopup.createPopup(config.emoji.pickerOptions, popupOptions);
+
+                    editor.emojiPicker.addEventListener('emoji:select', function (selection) {
+                        let doc = editor.codemirror.getDoc(),
+                            cursor = doc.getCursor(),
+                            emoji = marked.emojiConvertor.hex2colons(selection.hexcode, selection.emoji);
+
+                        doc.replaceRange(emoji, cursor);
+                    });
+
+                    return editor;
                 },
                 embedHideUserLink: function (el, nick, hidden) {
                     hidden = hidden || false;
@@ -848,6 +913,7 @@ sinner(function () {
                 parseMarkdown: function (text) {
                     let source = text.trim()
                             .replace(/&quot;/g, '"')
+                            .replace(/&amp;#/g, '&#')
                             .replace(/&lt;/g, '<')
                             .replace(/&( )?gt;/g, '>')
                             //TODO fix blockquotes nested by mistake
@@ -861,8 +927,12 @@ sinner(function () {
                         //TODO verify that marked.setOptions() in Page.initialize() works as expected
                         // dirty = marked.parse(source),
                         markdown = marked.parse(source, config.parserOptions),
-                        emoji = new EmojiConvertor(),
-                        dirty = emoji.replace_colons(markdown),
+                        noEmoticons = marked.emojiConvertor.replace_emoticons(markdown),
+                        noColons = marked.emojiConvertor.replace_colons(noEmoticons),
+                        dirty = marked.emojiConvertor.replace_unified(noColons)
+                            .replace(/&#\d+; &#\d+;/g, function (encoded) {
+                                return decodeURIComponent(encoded);
+                            }),
                         //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
                         // clean = DOMPurify.sanitize(dirty);
                         clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
@@ -1660,6 +1730,7 @@ sinner(function () {
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
 
             DOMPurify.setConfig(config.sanitizerOptions);
+
             mermaid.mermaidAPI.initialize(config.mermaidOptions);
 
             const renderer = {
@@ -1673,6 +1744,17 @@ sinner(function () {
             };
             marked.setOptions(config.parserOptions);
             marked.use({renderer});
+            marked.emojiConvertor = new EmojiConvertor();
+            marked.emojiConvertor.allow_caps = true;
+            marked.emojiConvertor.hex2colons = function (hexcode, emoji) {
+                hexcode = hexcode.toLowerCase();
+
+                if (typeof marked.emojiConvertor.data[hexcode] !== 'undefined') {
+                    return (':' + marked.emojiConvertor.data[hexcode][3][0] + ':');
+                }
+
+                return emoji;
+            };
 
             return this;
         }
@@ -2023,11 +2105,11 @@ sinner(function () {
                 }
             }
 
+            Utils.Dom.embedYoutube(content);
+
             if (config.useMarkdown > 1) {
                 Utils.Dom.transformMarkdownSource(content);
             }
-
-            Utils.Dom.embedYoutube(content);
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
                 let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
@@ -2048,11 +2130,11 @@ sinner(function () {
                     textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
                 }
 
+                Utils.Dom.embedYoutube(textEl);
+
                 if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(textEl);
                 }
-
-                Utils.Dom.embedYoutube(textEl);
             });
         }
     }
@@ -2174,11 +2256,11 @@ sinner(function () {
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
 
+                Utils.Dom.embedYoutube(el);
+
                 if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(el);
                 }
-
-                Utils.Dom.embedYoutube(el);
             });
         }
 
@@ -2268,11 +2350,11 @@ sinner(function () {
             document.querySelectorAll('div.guesttext').forEach(function (el) {
                 Utils.Dom.wrapElementWords(self, el, highlight, hide);
 
+                Utils.Dom.embedYoutube(el);
+
                 if (config.useMarkdown > 1) {
                     Utils.Dom.transformMarkdownSource(el);
                 }
-
-                Utils.Dom.embedYoutube(el);
             });
         }
     }
