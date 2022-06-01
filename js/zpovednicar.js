@@ -1077,6 +1077,10 @@ sinner(function () {
                         idioms: '$$uuid, [subject+highlight], content'
                     });
 
+                    database.on('populate', function (transaction) {
+                        transaction.idioms.add({subject: 'user', highlight: 0, content: 'Administrátor'});
+                    });
+
                     database.open().catch(function (e) {
                         console.error('Failed to open database: ' + e.stack);
                     });
