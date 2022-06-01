@@ -105,13 +105,11 @@ sinner(function () {
                 ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
                 ['ul#hideWord', gettext.__('Really delete hidden term?')]
             ]),
+            mermaidOptions: {
+                startOnLoad: false
+            },
             sanitizerOptions: {
-                // https://github.com/cure53/DOMPurify#can-i-configure-dompurify
-                // https://github.com/cure53/DOMPurify/tree/main/demos#what-is-this
-                //TODO enable the most strict and working one after Mermaid implementation
-                // USE_PROFILES: {html: true},
-                // USE_PROFILES: {html: true, svg: true}
-                // USE_PROFILES: {html: true, svg: true, svgFilters: true}
+                USE_PROFILES: {html: true},
                 FORBID_TAGS: ['style'],
                 FORBID_ATTR: ['style'],
                 ALLOW_ARIA_ATTR: false,
@@ -139,6 +137,13 @@ sinner(function () {
                 unorderedListStyle: '-',
                 forceSync: true,
                 indentWithTabs: false,
+                previewRender: function (text, el) {
+                    setTimeout(function () {
+                        mermaid.init(undefined, el.querySelectorAll('div.mermaid'));
+                    }, 100);
+
+                    return Utils.String.parseMarkdown(text);
+                },
                 // lineWrapping: false
                 renderingConfig: {
                     headerIds: false,
@@ -494,7 +499,6 @@ sinner(function () {
                     let params = new URLSearchParams(window.location.search),
                         options = config.editorOptions;
 
-                    options.previewRender = Utils.String.parseMarkdown;
                     options.autosave.uniqueId = params.has('statusik') ? 'post_' + params.get('statusik') :
                         params.has('kdo') ? 'profile_' + params.get('kdo') : 'kniha';
 
@@ -789,6 +793,10 @@ sinner(function () {
                     cloned.classList.add('markdownParsed');
                     el.classList.add('markdownSource');
                     el.after(cloned);
+
+                    cloned.querySelectorAll('div.mermaid').forEach(function (el) {
+                        mermaid.init(undefined, el);
+                    });
                 },
                 wrapElementWords: function (page, el, highlight, hide) {
                     if (config.useHiding && Utils.String.containsWord(el, hide)) {
@@ -837,7 +845,7 @@ sinner(function () {
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
-                parseMarkdown: function(text) {
+                parseMarkdown: function (text) {
                     let source = text.trim()
                             .replace(/&quot;/g, '"')
                             .replace(/&lt;/g, '<')
@@ -1652,7 +1660,19 @@ sinner(function () {
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
 
             DOMPurify.setConfig(config.sanitizerOptions);
+            mermaid.mermaidAPI.initialize(config.mermaidOptions);
+
+            const renderer = {
+                code(code, infostring, escaped) {
+                    if (infostring === 'mermaid') {
+                        return '<div class="mermaid">' + code + '</div>';
+                    }
+
+                    return '<pre><code class="language-' + infostring + '">' + code + '</code></pre>';
+                }
+            };
             marked.setOptions(config.parserOptions);
+            marked.use({renderer});
 
             return this;
         }
