@@ -152,6 +152,7 @@ div.markdownParsed p {
 .picmoPopup {
     z-index: 20;
 }
+
 ul[role=tablist] button[role=tab] {
     padding: 0px;
 }
