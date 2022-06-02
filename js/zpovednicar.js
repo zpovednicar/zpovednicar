@@ -165,7 +165,8 @@ sinner(function () {
             },
             parserOptions: {
                 // https://marked.js.org/using_advanced#options
-                headerIds: false
+                headerIds: false,
+                breaks: true
             },
             editorOptions: {
                 // https://github.com/Ionaru/easy-markdown-editor#options-list
@@ -195,6 +196,7 @@ sinner(function () {
                 // lineWrapping: false
                 renderingConfig: {
                     headerIds: false,
+                    breaks: true,
                     sanitizerFunction: function (dirty) {
                         //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
                         // return DOMPurify.sanitize(dirty);
@@ -385,6 +387,15 @@ sinner(function () {
                     ['background-color', config.color]
                 ]),
                 index: 3
+            }],
+            ['markdownHighlightMark', {
+                selector: 'mark',
+                style: new Map([
+                    ['color', '#000000'],
+                    ['padding', '0.1rem'],
+                    ['background-color', config.color]
+                ]),
+                index: 4
             }]
         ]),
         Events = {
@@ -412,6 +423,7 @@ sinner(function () {
                     Utils.Css.setStyle('postHighlightUser', 'color', new_value);
                     Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
                     Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
+                    Utils.Css.setStyle('markdownHighlightMark', 'background-color', new_value);
 
                     if (typeof settingsModal !== 'undefined' && remote) {
                         document.getElementById('colorPicker').value = config.color;
@@ -934,7 +946,11 @@ sinner(function () {
                 parseMarkdown: function (text) {
                     let source = text.trim()
                             .replace(/&quot;/g, '"')
+                            // encoded unicode characters
                             .replace(/&amp;#/g, '&#')
+                            .replace(/&#\d+;/g, function (encoded) {
+                                return decodeURIComponent(encoded);
+                            })
                             .replace(/&lt;/g, '<')
                             .replace(/&( )?gt;/g, '>')
                             //TODO fix blockquotes nested by mistake
@@ -944,6 +960,14 @@ sinner(function () {
                             .replace(/<(\/)?i>/g, '*')
                             .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
                             .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
+                            // sub/sup/mark tags https://regexr.com/6mtkv
+                            .replace(/<[ /subpmark]*>/g, function (tag) {
+                                return tag.replace(/\s+/g, '');
+                            })
+                            // markdown links and images https://regexr.com/6mtju
+                            .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
+                                return link.replace(/\s+/g, '');
+                            })
                             .trim(),
                         //TODO verify that marked.setOptions() in Page.initialize() works as expected
                         // dirty = marked.parse(source),
@@ -951,12 +975,9 @@ sinner(function () {
                         noEmoticons = marked.emojiConvertor.replace_emoticons(markdown),
                         noColons = marked.emojiConvertor.replace_colons(noEmoticons),
                         dirty = marked.emojiConvertor.replace_unified(noColons)
-                            .replace(/&#\d+;/g, function (encoded) {
-                                return decodeURIComponent(encoded);
-                            }),
-                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
-                        // clean = DOMPurify.sanitize(dirty);
-                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
+                    //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                    // clean = DOMPurify.sanitize(dirty);
+                    clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
 
                     return clean;
                 },
