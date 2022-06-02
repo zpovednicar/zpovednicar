@@ -165,8 +165,7 @@ sinner(function () {
             },
             parserOptions: {
                 // https://marked.js.org/using_advanced#options
-                headerIds: false,
-                breaks: true
+                headerIds: false
             },
             editorOptions: {
                 // https://github.com/Ionaru/easy-markdown-editor#options-list
@@ -720,12 +719,12 @@ sinner(function () {
 
                         if (e.target.classList.contains('fa-eye-slash')) {
                             textEl.parentElement.querySelector('.markdownParsed').remove();
-                            textEl.classList.remove('markdownSource');
+                            textEl.parentElement.querySelector('.originalContent').classList.remove('markdownSource');
                             e.target.classList.remove('fa-eye-slash')
                             e.target.classList.add('fa-eye')
                             e.target.parentElement.setAttribute('title', gettext.__('Show formatted text'));
                         } else {
-                            Utils.Dom.transformMarkdownSource(textEl);
+                            Utils.Dom.transformMarkdownSource(textEl.parentElement.querySelector('.originalContent'));
                             e.target.classList.remove('fa-eye')
                             e.target.classList.add('fa-eye-slash')
                             e.target.parentElement.setAttribute('title', gettext.__('Show original text'));
@@ -753,10 +752,6 @@ sinner(function () {
                 embedYoutube: function (el) {
                     let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
                         links = el.querySelectorAll('a')
-
-                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
-                        rel.remove();
-                    });
 
                     if (links.length > 0) {
                         links.forEach(function (link) {
@@ -813,7 +808,7 @@ sinner(function () {
                             container.appendChild(img);
                         }
 
-                        el.appendChild(container);
+                        el.parentElement.appendChild(container);
                     });
                 },
                 removeAllChildNodes: function (parent) {
@@ -888,6 +883,7 @@ sinner(function () {
                     let cloned = el.cloneNode();
 
                     cloned.innerHTML = Utils.String.parseMarkdown(el.innerHTML);
+                    cloned.classList.remove('originalContent');
                     cloned.classList.add('markdownParsed');
                     el.classList.add('markdownSource');
                     el.after(cloned);
@@ -899,7 +895,7 @@ sinner(function () {
                 wrapElementWords: function (page, el, highlight, hide) {
                     if (config.useHiding && Utils.String.containsWord(el, hide)) {
                         page.counterWords++;
-                        el.parentElement.parentElement.classList.add('hiddenWord');
+                        el.parentElement.parentElement.parentElement.classList.add('hiddenWord');
                         el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
                     }
 
@@ -967,19 +963,19 @@ sinner(function () {
                             // markdown links and images https://regexr.com/6mtju
                             .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
                                 return link.replace(/\s+/g, '');
-                            })
-                            .trim(),
+                            }),
                         //TODO verify that marked.setOptions() in Page.initialize() works as expected
                         // dirty = marked.parse(source),
-                        markdown = marked.parse(source, config.parserOptions),
+                        // to wrap source with spaces is necessary for string emoticons at the stsrt/end to be parsed correctly
+                        markdown = marked.parse(' ' + source + ' ', config.parserOptions),
                         dirty = marked.emojiConvertor.replace_unified(
                             marked.emojiConvertor.replace_colons(
                                 marked.emojiConvertor.replace_emoticons(markdown)
                             )
                         ),
-                    //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
-                    // clean = DOMPurify.sanitize(dirty);
-                    clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // clean = DOMPurify.sanitize(dirty);
+                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
 
                     return clean;
                 },
@@ -1904,7 +1900,7 @@ sinner(function () {
                 Utils.String.unwrap(el);
             });
 
-            document.querySelectorAll('.markdownParsed').forEach(function (el) {
+            document.querySelectorAll('.markdownParsed, .youtubeThumbnails').forEach(function (el) {
                 el.remove();
             });
 
@@ -2130,63 +2126,84 @@ sinner(function () {
             await super.processTexts();
 
             let self = this,
+                isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 header = document.querySelector('td.confheader'),
                 headers = document.querySelectorAll('td.conftext'),
                 content = headers[0],
-                authorInfo = headers[1].querySelectorAll('td.signinfo')[1];
+                wrapped = content.querySelector('span.originalContent');
 
-            if (config.useHiding) {
-                if (Utils.String.containsWord(header, hide)) {
-                    header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
+            if (!isQuotes) {
+                if (!wrapped) {
+                    content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                    wrapped = content.querySelector('span.originalContent');
                 }
-                if (Utils.String.containsWord(content, hide)) {
-                    content.innerHTML = Utils.String.wrapAll(content, hide, 'strikeWord');
-                }
-            }
 
-            if (config.useHighlighting) {
-                if (Utils.String.containsWord(header, highlight)) {
-                    header.innerHTML = Utils.String.wrapAll(header, highlight);
+                if (config.useHiding) {
+                    if (Utils.String.containsWord(header, hide)) {
+                        header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
+                    }
+                    if (Utils.String.containsWord(wrapped, hide)) {
+                        wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
+                    }
                 }
-                if (Utils.String.containsWord(content, highlight)) {
-                    content.innerHTML = Utils.String.wrapAll(content, highlight);
+
+                if (config.useHighlighting) {
+                    if (Utils.String.containsWord(header, highlight)) {
+                        header.innerHTML = Utils.String.wrapAll(header, highlight);
+                    }
+                    if (Utils.String.containsWord(wrapped, highlight)) {
+                        wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
+                    }
                 }
-            }
 
-            Utils.Dom.embedYoutube(content);
+                if (config.useMarkdown > 1) {
+                    Utils.Dom.transformMarkdownSource(wrapped);
+                }
 
-            if (config.useMarkdown > 1) {
-                Utils.Dom.transformMarkdownSource(content);
+                if (config.youtubeThumbnail > 0) {
+                    Utils.Dom.embedYoutube(wrapped);
+                }
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
                 let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
                     headEl = nickEl.previousElementSibling.previousElementSibling,
                     textEl = nickEl.previousElementSibling.firstElementChild,
+                    wrappedEl = textEl.querySelector('span.originalContent'),
                     toHide = [nickEl, headEl, textEl.parentElement];
 
-                if (config.useHiding && Utils.String.containsWord(textEl, hide)) {
+                if (!wrappedEl) {
+                    textEl.innerHTML = '<span class="originalContent">' + textEl.innerHTML + '</span>';
+                    wrappedEl = textEl.querySelector('span.originalContent');
+                }
+
+                if (config.useHiding && Utils.String.containsWord(wrappedEl, hide)) {
                     self.counterWords++;
-                    textEl.innerHTML = Utils.String.wrapAll(textEl, hide, 'strikeWord');
+                    wrappedEl.innerHTML = Utils.String.wrapAll(wrappedEl, hide, 'strikeWord');
 
                     toHide.forEach(function (hel) {
                         hel.classList.add('hiddenWord');
                     });
                 }
 
-                if (config.useHighlighting && Utils.String.containsWord(textEl, highlight)) {
-                    textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
+                if (config.useHighlighting && Utils.String.containsWord(wrappedEl, highlight)) {
+                    wrappedEl.innerHTML = Utils.String.wrapAll(wrappedEl, highlight);
                 }
 
-                Utils.Dom.embedYoutube(textEl);
-
                 if (config.useMarkdown > 1) {
-                    Utils.Dom.transformMarkdownSource(textEl);
+                    Utils.Dom.transformMarkdownSource(wrappedEl);
+                }
+
+                if (config.youtubeThumbnail > 0) {
+                    Utils.Dom.embedYoutube(wrappedEl);
                 }
             });
         }
+    }
+
+    class PostPreviewPage extends Page {
     }
 
     class ProfilePage extends Page {
@@ -2304,13 +2321,20 @@ sinner(function () {
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
-                Utils.Dom.wrapElementWords(self, el, highlight, hide);
+                let wrapped = el.querySelector('span.originalContent')
 
-                Utils.Dom.embedYoutube(el);
+                if (!wrapped) {
+                    el.innerHTML = '<span class="originalContent">' + el.innerHTML + '</span>';
+                    wrapped = el.querySelector('span.originalContent');
+                }
+
+                Utils.Dom.wrapElementWords(self, wrapped, highlight, hide);
 
                 if (config.useMarkdown > 1) {
-                    Utils.Dom.transformMarkdownSource(el);
+                    Utils.Dom.transformMarkdownSource(wrapped);
                 }
+
+                Utils.Dom.embedYoutube(wrapped);
             });
         }
 
@@ -2398,13 +2422,20 @@ sinner(function () {
                 hide = await Utils.Db.getIdioms('word', false);
 
             document.querySelectorAll('div.guesttext').forEach(function (el) {
-                Utils.Dom.wrapElementWords(self, el, highlight, hide);
+                let wrapped = el.querySelector('span.originalContent')
 
-                Utils.Dom.embedYoutube(el);
+                if (!wrapped) {
+                    el.innerHTML = '<span class="originalContent">' + el.innerHTML + '</span>';
+                    wrapped = el.querySelector('span.originalContent');
+                }
+
+                Utils.Dom.wrapElementWords(self, wrapped, highlight, hide);
 
                 if (config.useMarkdown > 1) {
-                    Utils.Dom.transformMarkdownSource(el);
+                    Utils.Dom.transformMarkdownSource(wrapped);
                 }
+
+                Utils.Dom.embedYoutube(wrapped);
             });
         }
     }
@@ -2518,6 +2549,10 @@ sinner(function () {
         case 'detail':
         case 'zpovperl':
             page = new PostPage;
+            break;
+        case 'souhlas':
+        case 'souhlasr':
+            page = new PostPreviewPage;
             break;
         case 'profil':
             page = new ProfilePage;
