@@ -137,7 +137,7 @@ sinner(function () {
                     // https://popper.js.org/docs/v2/constructors/#options
                     // position: 'auto'
                     // position: 'auto-start'
-                    position: 'auto-end'
+                    // position: 'auto-end'
                     // position: 'top'
                     // position: 'top-start'
                     // position: 'top-end'
@@ -148,7 +148,7 @@ sinner(function () {
                     // position: 'right-start'
                     // position: 'right-end'
                     // position: 'left'
-                    // position: 'left-start'
+                    position: 'left-start'
                     // position: 'left-end'
                 }
             },
