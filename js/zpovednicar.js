@@ -2033,7 +2033,9 @@ sinner(function () {
                 nick = Utils.String.compress(text, true, true, true),
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
                 superParent = parent.parentElement.parentElement.parentElement,
-                info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                infoParent = document.querySelectorAll('td.conftext')[1],
+                infoWrapper = infoParent.classList.contains('markdownParsed') ? document.querySelectorAll('td.conftext')[2] : infoParent,
+                info = infoWrapper.querySelectorAll('td.signinfo')[1],
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
