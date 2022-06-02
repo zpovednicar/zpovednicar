@@ -972,9 +972,11 @@ sinner(function () {
                         //TODO verify that marked.setOptions() in Page.initialize() works as expected
                         // dirty = marked.parse(source),
                         markdown = marked.parse(source, config.parserOptions),
-                        noEmoticons = marked.emojiConvertor.replace_emoticons(markdown),
-                        noColons = marked.emojiConvertor.replace_colons(noEmoticons),
-                        dirty = marked.emojiConvertor.replace_unified(noColons)
+                        dirty = marked.emojiConvertor.replace_unified(
+                            marked.emojiConvertor.replace_colons(
+                                marked.emojiConvertor.replace_emoticons(markdown)
+                            )
+                        ),
                     //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
                     // clean = DOMPurify.sanitize(dirty);
                     clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
