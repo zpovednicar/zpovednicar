@@ -734,14 +734,14 @@ sinner(function () {
                     link.appendChild(linkContent);
                     el.prepend(link);
                 },
-                embedUserLinks: async function (el, nick, highlight, hide, markdownEl) {
+                embedUserLinks: function (el, nick, highlight, hide, markdownEl) {
                     let compressed = Utils.String.compress(nick, true, true, true);
 
-                    if (config.useHiding) {
+                    if (config.useHiding && nick.length) {
                         Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
                     }
 
-                    if (config.useHighlighting) {
+                    if (config.useHighlighting && nick.length) {
                         Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
                     }
 
@@ -2204,6 +2204,83 @@ sinner(function () {
     }
 
     class PostPreviewPage extends Page {
+        async processNicks() {
+            await super.processNicks();
+
+            let highlight = await Utils.Db.getIdioms('user', true, true),
+                hide = await Utils.Db.getIdioms('user', false, true),
+                infos = document.querySelectorAll('td.signinfo'),
+                el = document.querySelector('span.signunreg, span.signnick'),
+                text = el.innerText.trim(),
+                nick = Utils.String.compress(text, true, true, true),
+                info = infos[1],
+                parent = info.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                }),
+                textEl = parent.querySelector('td.conftext');
+
+            if (config.useHighlighting && highlight.includes(nick)) {
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
+                }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            }
+
+            info.prepend(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
+        }
+
+        async processTexts() {
+            await super.processTexts();
+
+            let highlight = await Utils.Db.getIdioms('word', true),
+                hide = await Utils.Db.getIdioms('word', false),
+                header = document.querySelector('td.confheader'),
+                content = document.querySelector('td.conftext'),
+                wrapped = content.querySelector('span.originalContent');
+
+            if (!wrapped) {
+                content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                wrapped = content.querySelector('span.originalContent');
+            }
+
+            if (config.useHiding) {
+                if (Utils.String.containsWord(header, hide)) {
+                    header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
+                }
+                if (Utils.String.containsWord(wrapped, hide)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
+                }
+            }
+
+            if (config.useHighlighting) {
+                if (Utils.String.containsWord(header, highlight)) {
+                    header.innerHTML = Utils.String.wrapAll(header, highlight);
+                }
+                if (Utils.String.containsWord(wrapped, highlight)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
+                }
+            }
+
+            if (config.useMarkdown > 1) {
+                Utils.Dom.transformMarkdownSource(wrapped);
+            }
+
+            if (config.youtubeThumbnail > 0) {
+                Utils.Dom.embedYoutube(wrapped);
+            }
+        }
+    }
+
+    class PostCommentPreviewPage extends Page {
+    }
+
+    class PostAddPage extends Page {
     }
 
     class ProfilePage extends Page {
@@ -2551,8 +2628,13 @@ sinner(function () {
             page = new PostPage;
             break;
         case 'souhlas':
-        case 'souhlasr':
             page = new PostPreviewPage;
+            break;
+        case 'souhlasr':
+            page = new PostCommentPreviewPage;
+            break;
+        case 'vlastnizp':
+            page = new PostAddPage;
             break;
         case 'profil':
             page = new ProfilePage;
