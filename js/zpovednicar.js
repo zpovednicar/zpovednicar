@@ -576,11 +576,15 @@ sinner(function () {
             },
             Dom: {
                 createMarkdownEditor: function () {
-                    let params = new URLSearchParams(window.location.search),
-                        options = config.editorOptions;
+                    let options = config.editorOptions,
+                        uniqueId = (typeof page.editorUniqueId === 'undefined' ? false : page.editorUniqueId);
 
-                    options.autosave.uniqueId = params.has('statusik') ? 'post_' + params.get('statusik') :
-                        params.has('kdo') ? 'profile_' + params.get('kdo') : 'kniha';
+                    if (uniqueId) {
+                        options.autosave.uniqueId = uniqueId;
+                    } else {
+                        options.autosave.enabled = false;
+                        options.status = false;
+                    }
 
                     let editor = new EasyMDE(options),
                         popupTrigger = document.getElementById('emojiTrigger'),
@@ -1987,7 +1991,13 @@ sinner(function () {
         constructor() {
             super();
 
+            let params = new URLSearchParams(window.location.search);
+
             this.editor = null;
+
+            if (params.has('statusik')) {
+                this.editorUniqueId = 'post_' + params.get('statusik');
+            }
         }
 
         initialize() {
@@ -2344,13 +2354,41 @@ sinner(function () {
     }
 
     class PostAddPage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+            this.editorUniqueId = 'post_new';
+        }
+
+        async process() {
+            super.process();
+
+            let infos = document.querySelectorAll('td.infolmenu'),
+                info = infos[infos.length - 1];
+
+            info.style.width = '50px';
+            info.style['font-size'] = '.4rem';
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZPOVĚDI');
+
+            if (config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
+        }
     }
 
     class ProfilePage extends Page {
         constructor() {
             super();
 
+            let params = new URLSearchParams(window.location.search);
+
             this.editor = null;
+
+            if (params.has('kdo')) {
+                this.editorUniqueId = 'profile_' + params.get('kdo');
+            }
         }
 
         initialize() {
@@ -2492,6 +2530,7 @@ sinner(function () {
             super();
 
             this.editor = null;
+            this.editorUniqueId = 'book';
         }
 
         initialize() {
