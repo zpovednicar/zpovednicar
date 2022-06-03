@@ -2396,13 +2396,19 @@ sinner(function () {
 
             let tables = document.querySelectorAll('body > div > table');
 
-            tables[tables.length === 5 ? 4 : 5]
-                .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+            if (tables.length > 4) {
+                tables[tables.length === 5 ? 4 : 5]
+                    .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+            }
 
             return this;
         }
 
         async process() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             super.process();
 
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
@@ -2413,6 +2419,10 @@ sinner(function () {
         }
 
         processAvatars() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             let info = document.querySelectorAll('table.infoltext tbody'),
                 wwwContainer = info[0].children[info[0].children.length - 5];
 
@@ -2430,6 +2440,10 @@ sinner(function () {
         }
 
         async processNicks() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             await super.processNicks();
 
             let self = this,
@@ -2492,6 +2506,10 @@ sinner(function () {
         }
 
         async processTexts() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             await super.processTexts();
 
             let self = this,
