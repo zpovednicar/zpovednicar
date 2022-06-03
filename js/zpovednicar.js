@@ -2278,6 +2278,69 @@ sinner(function () {
     }
 
     class PostCommentPreviewPage extends Page {
+        async processNicks() {
+            await super.processNicks();
+
+            let highlight = await Utils.Db.getIdioms('user', true, true),
+                hide = await Utils.Db.getIdioms('user', false, true),
+                info = document.querySelector('td.signinfo'),
+                el = document.querySelector('td.signunreg, td.signnick'),
+                text = el.innerText.trim(),
+                nick = Utils.String.compress(text, true, true, true),
+                parent = info.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                }),
+                textEl = parent.querySelector('td.absoltext');
+
+            if (config.useHighlighting && highlight.includes(nick)) {
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
+                }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            }
+
+            info.prepend(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
+        }
+
+        async processTexts() {
+            await super.processTexts();
+
+            let highlight = await Utils.Db.getIdioms('word', true),
+                hide = await Utils.Db.getIdioms('word', false),
+                content = document.querySelector('td.absoltext'),
+                wrapped = content.querySelector('span.originalContent');
+
+            if (!wrapped) {
+                content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                wrapped = content.querySelector('span.originalContent');
+            }
+
+            if (config.useHiding) {
+                if (Utils.String.containsWord(wrapped, hide)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
+                }
+            }
+
+            if (config.useHighlighting) {
+                if (Utils.String.containsWord(wrapped, highlight)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
+                }
+            }
+
+            if (config.useMarkdown > 1) {
+                Utils.Dom.transformMarkdownSource(wrapped);
+            }
+
+            if (config.youtubeThumbnail > 0) {
+                Utils.Dom.embedYoutube(wrapped);
+            }
+        }
     }
 
     class PostAddPage extends Page {

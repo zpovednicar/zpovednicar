@@ -74,7 +74,7 @@ tr.hiddenWord, .markdownSource {
     display: none;
 }
 
-span.strikeWord, span.strikeUser, span.strikeUser a, td.strikeUser {
+span.strikeWord, span.strikeUser, span.strikeUser a, td.strikeUser, td.strikeUser a {
     text-decoration: line-through;
     color: #000000;
 }
