@@ -352,7 +352,27 @@ sinner(function () {
                         title: gettext.__('Markdown Guide')
                     }
                 ]
-            }
+            },
+            smileys: new Map([
+                ['s1.gif', ':-D'],
+                ['s15.gif', ':oD'],
+                ['s2.gif', ':-))'],
+                ['s3.gif', ':-)'],
+                ['s4.gif', ';-)'],
+                ['s5.gif', ':-P'],
+                ['s16.gif', ':oP'],
+                ['s17.gif', '%-)'],
+                ['s6.gif', ':-|'],
+                ['s7.gif', ':-/'],
+                ['s8.gif', ':('],
+                ['s12.gif', 'X[]'],
+                ['s9.gif', ':´-('],
+                ['s19.gif', ':´o('],
+                ['s10.gif', ':-O'],
+                ['s11.gif', 'B-]'],
+                ['s13.gif', ':_)'],
+                ['s18.gif', ':-!']
+            ])
         },
         cssRules = new Map([
             ['homeHighlightUser', {
@@ -485,6 +505,18 @@ sinner(function () {
                     page.resetTexts();
                     await page.processTexts();
                     page.displayCounters();
+                }
+            },
+            Editor: {
+                smileyClickListener: function (e) {
+                    e.preventDefault();
+
+                    let src = e.target.src.split('/').pop(),
+                        smile = (config.smileys.get(src) + ' '),
+                        doc = page.editor.codemirror.getDoc(),
+                        cursor = doc.getCursor();
+
+                    doc.replaceRange(smile, cursor);
                 }
             },
             Modal: {
@@ -674,12 +706,13 @@ sinner(function () {
                 },
                 embedMarkdownEditorSwitcher: function (text) {
                     let parent = document.querySelector('textarea').parentElement,
+                        withEditor = (config.useMarkdown > 1),
                         link = Object.assign(document.createElement('a'), {
                             href: '#',
-                            title: (config.useMarkdown > 1 ? gettext.__('Hide text editor') : gettext.__('Show text editor'))
+                            title: (withEditor ? gettext.__('Hide text editor') : gettext.__('Show text editor'))
                         }),
                         linkContent = Object.assign(document.createElement('span'), {
-                            className: 'fas ' + (config.useMarkdown > 1 ? 'fa-eye-slash' : 'fa-eye')
+                            className: 'fas ' + (withEditor ? 'fa-eye-slash' : 'fa-eye')
                         });
 
                     parent.innerHTML = Utils.String.wrapAll(parent, [text], page.editorSwitcher);
@@ -701,6 +734,33 @@ sinner(function () {
                             e.target.classList.add('fa-eye-slash')
                             e.target.parentElement.setAttribute('title', gettext.__('Hide text editor'));
                         }
+
+                        document.querySelectorAll('a.forTextarea, a.forEditor').forEach(function (anchor) {
+                            anchor.classList.toggle('hiddenSmiley');
+                        });
+                    });
+
+                    parent.querySelectorAll('a > img').forEach(function (emo) {
+                        let img = emo.src.split('/').pop();
+
+                        if (!config.smileys.has(img)) {
+                            return;
+                        }
+
+                        let anchor = emo.parentElement,
+                            clone = anchor.cloneNode(true);
+
+                        anchor.classList.add('forTextarea');
+                        clone.classList.add('forEditor');
+
+                        if (withEditor) {
+                            anchor.classList.add('hiddenSmiley');
+                        } else {
+                            clone.classList.add('hiddenSmiley');
+                        }
+
+                        clone.onclick = Events.Editor.smileyClickListener;
+                        anchor.after(clone);
                     });
 
                     let switcher = document.querySelector('span.' + page.editorSwitcher);
