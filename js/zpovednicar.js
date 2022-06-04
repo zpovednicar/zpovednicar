@@ -159,7 +159,7 @@ sinner(function () {
             sanitizerOptions: {
                 USE_PROFILES: {html: true},
                 FORBID_TAGS: ['style'],
-                FORBID_ATTR: ['style'],
+                // FORBID_ATTR: ['style'], // when forbidden, it breaks CSS fallback for stripe emojis on Windows
                 ALLOW_ARIA_ATTR: false,
                 ALLOW_DATA_ATTR: false
             },
@@ -1875,8 +1875,11 @@ sinner(function () {
             marked.use({renderer});
             marked.emojiConvertor = new EmojiConvertor();
             marked.emojiConvertor.allow_caps = true;
+// marked.emojiConvertor.allow_native = false;
+// marked.emojiConvertor.replace_mode = 'css';
             marked.emojiConvertor.use_sheet = true;
-            marked.emojiConvertor.img_sets.apple.sheet = 'https://cdn.panicove.cz/img/sheet_apple_64.png';
+            marked.emojiConvertor.img_set = 'apple';
+            marked.emojiConvertor.img_sets.apple.sheet = 'https://cdn.panicove.cz/img/sheet_apple_64.png?emoji-data=v7.0.2';
             marked.emojiConvertor.hex2colons = function (hexcode, emoji) {
                 hexcode = hexcode.toLowerCase();
 
