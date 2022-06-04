@@ -166,10 +166,11 @@ img.avatar {
     padding-left: 8px;
 }
 
-.markdownParsed {
+.markdownParsed, .editor-preview-full, .editor-preview-side {
     font-family: 'Times New Roman', Times, serif, 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI',
     'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'EmojiOne Color',
     'Android Emoji';
+    padding: 10px;
 }
 
 .markdownParsed p,
@@ -219,6 +220,7 @@ img.avatar {
     background: #90CCF1;
     border-left: 0.3rem solid black;
     overflow-y: hidden;
+    margin-bottom: 10px;
 }
 
 .markdownParsed pre > code,
@@ -226,7 +228,7 @@ img.avatar {
 .editor-preview-side pre > code {
     border-radius: 0;
     display: block;
-    padding: 1rem 1.5rem;
+    padding: .5rem 1rem;
     white-space: pre;
 }
 
@@ -246,6 +248,8 @@ img.avatar {
     overflow-x: auto;
     text-align: left;
     width: 100%;
+    padding-right: 8px;
+    padding-left: 8px;
     /*!*display: table;*!*/
     /*!*overflow-x: initial;*!*/
 }
@@ -256,8 +260,8 @@ img.avatar {
 .markdownParsed th,
 .editor-preview-full th,
 .editor-preview-side th {
-    border-bottom: 0.1rem solid #90CCF1;
-    padding: 1.2rem 1.5rem;
+    border: 1px solid #90CCF1;
+    padding: 5px;
 }
 
 .markdownParsed td:first-child,
