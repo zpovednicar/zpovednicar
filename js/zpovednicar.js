@@ -943,21 +943,27 @@ sinner(function () {
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
-                parseMarkdown: function (text) {
-                    let source = text.trim()
+                parseMarkdown: function (html) {
+                    let text = html.trim()
+                            // common replacements
+                            .replace(/&nbsp;/g, ' ')
                             .replace(/&quot;/g, '"')
-                            // encoded unicode characters
+                            .replace(/&lt;/g, '<')
+                            .replace(/&( )?gt;/g, '>')
+                            // encoded unicode characters (mostly native emoticons, but not exclusively)
                             .replace(/&amp;#/g, '&#')
                             .replace(/&#\d+;/g, function (encoded) {
                                 return decodeURIComponent(encoded);
                             })
-                            .replace(/&lt;/g, '<')
-                            .replace(/&( )?gt;/g, '>')
-                            //TODO fix blockquotes nested by mistake
-                            // .replace(/(>)\1+/g, '>')
-                            // .replace(/(<)\1+/g, '<')
+                            /*
+                                TODO fix blockquote marks nested by mistake (ones without previous higher levels)
+                                .replace(/(>)\1+/g, '>')
+                                .replace(/(<)\1+/g, '<')
+                            */
+                            // bold/italic tags
                             .replace(/<(\/)?b>/g, '**')
                             .replace(/<(\/)?i>/g, '*')
+                            // line breaks
                             .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
                             .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
                             // sub/sup/mark tags https://regexr.com/6mtkv
@@ -968,15 +974,14 @@ sinner(function () {
                             .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
                                 return link.replace(/\s+/g, '');
                             }),
-                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
-                        // dirty = marked.parse(source),
-                        // to wrap source with spaces is necessary for string emoticons at the stsrt/end to be parsed correctly
-                        markdown = marked.parse(' ' + source + ' ', config.parserOptions),
-                        dirty = marked.emojiConvertor.replace_unified(
+                        markdown = marked.emojiConvertor.replace_unified(
                             marked.emojiConvertor.replace_colons(
-                                marked.emojiConvertor.replace_emoticons(markdown)
+                                marked.emojiConvertor.replace_emoticons(text)
                             )
                         ),
+                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
+                        // dirty = marked.parse(sourceWithEmojis),
+                        dirty = marked.parse(markdown, config.parserOptions),
                         //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
                         // clean = DOMPurify.sanitize(dirty);
                         clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
@@ -2364,11 +2369,9 @@ sinner(function () {
         async process() {
             super.process();
 
-            let infos = document.querySelectorAll('td.infolmenu'),
-                info = infos[infos.length - 1];
+            let info = document.querySelectorAll('td.infolmenu');
 
-            info.style.width = '50px';
-            info.style['font-size'] = '.4rem';
+            info[info.length - 1].style.display = 'none';
 
             Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZPOVĚDI');
 
