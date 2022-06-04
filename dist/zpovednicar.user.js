@@ -2,7 +2,7 @@
 // @name         Zpovědničář BETA
 // @description  Doplňková funkcionalita stránek pro všechny smutné lidičky a pro ty, kdo jim chtějí pomoci
 // @license      http://www.wtfpl.net/about/
-// @version      1.6.1.4
+// @version      1.6.1.5
 // @author       Evžen Huml
 // @supportURL   https://www.zpovednice.eu/profil.php?kdo=71138
 // @homepageURL  https://www.zpovednicar.cz/
@@ -19,7 +19,7 @@
 // @resource     CSS_PICKER https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css
 // @resource     CSS_EMOJI https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.css
 // @resource     CSS_EASYMDE https://unpkg.com/easymde@2.16.1/dist/easymde.min.css
-// @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/beta/css/zpovednicar-1.6.1.1.min.css
+// @resource     CSS_CUSTOM https://cdn.zpovednicar.cz/beta/css/zpovednicar-1.6.1.5.min.css
 // @require      https://cdn.jsdelivr.net/npm/dexie@3.2.2/dist/dexie.min.js
 // @require      https://cdn.jsdelivr.net/npm/dexie-observable@3.0.0-beta.11/dist/dexie-observable.min.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/tingle/0.16.0/tingle.min.js
