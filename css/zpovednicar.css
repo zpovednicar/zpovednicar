@@ -4,7 +4,7 @@
 
 .tingle-modal-box {
     background-color: #07274B;
-    width: 520px;
+    width: 530px;
 }
 
 .tingle-modal-box__footer {
@@ -24,7 +24,7 @@
     width: 260px;
 }
 
-#enforceDomain, #youtubeThumbnail {
+#enforceDomain, #youtubeThumbnail, #useMarkdown {
     width: 100%;
 }
 
@@ -69,11 +69,12 @@ ul.sinnerList a, ul.sinnerList a:visited {
     color: #ffffcc;
 }
 
-#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser, tr.hiddenWord {
+#conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser,
+tr.hiddenWord, .markdownSource, .hiddenSmiley {
     display: none;
 }
 
-span.strikeWord, span.strikeUser, span.strikeUser a, td.strikeUser {
+span.strikeWord, span.strikeUser, span.strikeUser a, td.strikeUser, td.strikeUser a {
     text-decoration: line-through;
     color: #000000;
 }
@@ -92,6 +93,10 @@ span.userLinks {
 
 span.userLinks img {
     vertical-align: text-bottom;
+}
+
+span.fa, span.fas {
+    color: #90CCF1;
 }
 
 .embed-container {
@@ -133,4 +138,233 @@ img.avatar {
 #countersContainer a.counter span {
     display: table-cell;
     vertical-align: bottom;
+}
+
+.CodeMirror-code {
+    font-family: tahoma, arial;
+    font-size: 13px;
+    font-weight: bold;
+    color: #336699;
+}
+
+.editor-toolbar {
+    color: #000000;
+    background-color: #90CCF1;
+}
+
+.editor-preview-full, .editor-preview-side {
+    font-family: 'Times New Roman', Times, serif, 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI',
+    'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'EmojiOne Color',
+    'Android Emoji';
+    font-size: 19px;
+    font-weight: normal;
+    color: #FFFFCC;
+    background-color: #1F4978;
+    text-align: justify;
+    line-height: 120%;
+    padding-right: 8px;
+    padding-left: 8px;
+}
+
+.markdownParsed, .editor-preview-full, .editor-preview-side {
+    font-family: 'Times New Roman', Times, serif, 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI',
+    'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'EmojiOne Color',
+    'Android Emoji';
+    padding: 10px;
+}
+
+.markdownParsed p,
+.editor-preview-full p,
+.editor-preview-side p {
+    margin-block-start: 0px;
+    margin-top: 0;
+}
+
+.markdownParsed a, .markdownParsed a:visited,
+.editor-preview-full a, .editor-preview-full a:visited,
+.editor-preview-side a, .editor-preview-side a:visited {
+    font-size: 100%;
+    color: #90CCF1;
+}
+
+.markdownParsed blockquote,
+.editor-preview-full blockquote,
+.editor-preview-side blockquote {
+    border-left: 0.3rem solid #90CCF1;
+    margin-left: 0;
+    margin-right: 0;
+    padding: 0.5rem 1rem;
+}
+
+.markdownParsed blockquote *:last-child,
+.editor-preview-full blockquote *:last-child,
+.editor-preview-side blockquote *:last-child {
+    margin-bottom: 0;
+}
+
+.markdownParsed code,
+.editor-preview-full code,
+.editor-preview-side code {
+    background: #90CCF1;
+    color: black;
+    border-radius: .4rem;
+    font-size: 86%;
+    margin: 0 .2rem;
+    padding: .2rem .5rem;
+    white-space: nowrap;
+}
+
+.markdownParsed pre,
+.editor-preview-full pre,
+.editor-preview-side pre {
+    background: #90CCF1;
+    border-left: 0.3rem solid black;
+    overflow-y: hidden;
+    margin-bottom: 10px;
+}
+
+.markdownParsed pre > code,
+.editor-preview-full pre > code,
+.editor-preview-side pre > code {
+    border-radius: 0;
+    display: block;
+    padding: .5rem 1rem;
+    white-space: pre;
+}
+
+.markdownParsed hr,
+.editor-preview-full hr,
+.editor-preview-side hr {
+    border: 0;
+    border-top: 0.2rem solid #90CCF1;
+    margin: 2.0rem 0;
+}
+
+.markdownParsed table,
+.editor-preview-full table,
+.editor-preview-side table {
+    border-spacing: 0;
+    display: block;
+    overflow-x: auto;
+    text-align: left;
+    width: 100%;
+    padding-right: 8px;
+    padding-left: 8px;
+    /*!*display: table;*!*/
+    /*!*overflow-x: initial;*!*/
+}
+
+.markdownParsed td,
+.editor-preview-full td,
+.editor-preview-side td,
+.markdownParsed th,
+.editor-preview-full th,
+.editor-preview-side th {
+    border: 1px solid #90CCF1;
+    padding: 5px;
+}
+
+.markdownParsed td:first-child,
+.editor-preview-full td:first-child,
+.editor-preview-side td:first-child,
+.markdownParsed th:first-child,
+.editor-preview-full th:first-child,
+.editor-preview-side th:first-child {
+    padding-left: 0.2rem;
+}
+
+.markdownParsed td:last-child,
+.editor-preview-full td:last-child,
+.editor-preview-side td:last-child,
+.markdownParsed th:last-child,
+.editor-preview-full th:last-child,
+.editor-preview-side th:last-child {
+    padding-right: 0.2rem;
+}
+
+.markdownParsed b,
+.editor-preview-full b,
+.editor-preview-side b,
+.markdownParsed strong,
+.editor-preview-full strong,
+.editor-preview-side strong {
+    font-weight: bold;
+}
+
+.markdownParsed h1,
+.editor-preview-full h1,
+.editor-preview-side h1,
+.markdownParsed h2,
+.editor-preview-full h2,
+.editor-preview-side h2,
+.markdownParsed h3,
+.editor-preview-full h3,
+.editor-preview-side h3,
+.markdownParsed h4,
+.editor-preview-full h4,
+.editor-preview-side h4,
+.markdownParsed h5,
+.editor-preview-full h5,
+.editor-preview-side h5,
+.markdownParsed h6,
+.editor-preview-full h6,
+.editor-preview-side h6 {
+    font-weight: 200;
+    letter-spacing: -.1rem;
+    margin-bottom: 1.5rem;
+    margin-top: 0;
+    line-height: 1.2;
+}
+
+.markdownParsed h1,
+.editor-preview-full h1,
+.editor-preview-side h1 {
+    font-size: 2.3rem;
+}
+
+.markdownParsed h2,
+.editor-preview-full h2,
+.editor-preview-side h2 {
+    font-size: 2rem;
+}
+
+.markdownParsed h3,
+.editor-preview-full h3,
+.editor-preview-side h3 {
+    font-size: 1.7rem;
+}
+
+.markdownParsed h4,
+.editor-preview-full h4,
+.editor-preview-side h4 {
+    font-size: 1.4rem;
+    letter-spacing: -.08rem;
+}
+
+.markdownParsed h5,
+.editor-preview-full h5,
+.editor-preview-side h5 {
+    font-size: 1.2rem;
+    letter-spacing: -.05rem;
+}
+
+.markdownParsed h6,
+.editor-preview-full h6,
+.editor-preview-side h6 {
+    font-size: 1rem;
+    letter-spacing: 0;
+}
+
+.markdownParsed img,
+.editor-preview-full img,
+.editor-preview-side img {
+    max-width: 100%;
+}
+
+.picmoPopup {
+    z-index: 20;
+}
+
+ul[role=tablist] button[role=tab] {
+    padding: 0px;
 }
