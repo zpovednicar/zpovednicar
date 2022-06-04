@@ -1984,7 +1984,6 @@ sinner(function () {
             Utils.Css.removeClass(['highlightUser', 'strikeUser', 'highlightStatsUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
                 el.remove();
             });
         }
@@ -2181,6 +2180,9 @@ sinner(function () {
 
             // quotes header is rendered without userinfo (system account)
             if (!isQuotes) {
+                info.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 info.prepend(linksEl);
                 Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, parent.previousElementSibling.firstElementChild);
             }
@@ -2227,6 +2229,9 @@ sinner(function () {
                     });
                 }
 
+                info.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 info.prepend(linksEl);
                 Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, container2.firstElementChild);
             });
@@ -2341,6 +2346,9 @@ sinner(function () {
                 }
             }
 
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
+            });
             info.prepend(linksEl);
             Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
         }
@@ -2414,6 +2422,9 @@ sinner(function () {
                 }
             }
 
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
+            });
             info.prepend(linksEl);
             Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
         }
@@ -2566,6 +2577,9 @@ sinner(function () {
                 }
             }
 
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
+            });
             info.appendChild(linksEl);
             Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
@@ -2598,6 +2612,9 @@ sinner(function () {
                     }
                 }
 
+                el.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 el.prepend(linksEl);
                 Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
@@ -2704,6 +2721,9 @@ sinner(function () {
                     }
                 }
 
+                el.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 el.prepend(linksEl);
                 Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
