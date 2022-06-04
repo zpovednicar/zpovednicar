@@ -1237,17 +1237,20 @@ sinner(function () {
                         return;
                     }
 
-                    DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
-                        if (typeof args.result === 'undefined' || args.result.length === 0) {
+                    let modalText = gettext.__('Password for the backup file') + '<br><br>' + gettext.__('(enter empty password for no encryption)');
+
+                    DayPilot.Modal.prompt(modalText, promptOptions).then(function (args) {
+                        if (typeof args.result === 'undefined') {
                             return;
                         }
 
                         let csv = Papa.unparse(data, {
                                 quotes: true
                             }),
-                            encrypted = Utils.String.rc4(args.result, csv),
-                            blob = new Blob([encrypted]),
-                            filename = 'zpovednicar-' + (new Date()).toISOString() + '.data';
+                            useEncryption = args.result.length > 0,
+                            output = (useEncryption ? Utils.String.rc4(args.result, csv) : csv),
+                            blob = new Blob([output]),
+                            filename = 'zpovednicar-' + (new Date()).toISOString() + (useEncryption ? '.data' : '.csv');
 
                         window.saveAs(blob, filename);
                         DayPilot.Modal.alert(gettext.__('Successful backup, downloading file %1%2', '<br><br>', filename), promptOptions);
@@ -1686,6 +1689,29 @@ sinner(function () {
                     console.error(err);
                 });
             },
+            restoreData: function (csv, errorMessage) {
+                let promptOptions = {
+                        okText: gettext.__('OK'),
+                        cancelText: gettext.__('Cancel'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    data = Papa.parse(csv, {
+                        header: true,
+                        dynamicTyping: true
+                    });
+
+                if (data.errors.length > 0) {
+                    DayPilot.Modal.alert(errorMessage, promptOptions);
+                } else {
+                    db.idioms.clear().then(function () {
+                        db.idioms.bulkPut(data.data).then(function (lastKey) {
+                            DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
+                        }).catch(Dexie.BulkError, function (err) {
+                            console.error(err);
+                        });
+                    });
+                }
+            },
             restore: function () {
                 let promptOptions = {
                         okText: gettext.__('Send'),
@@ -1705,30 +1731,20 @@ sinner(function () {
                     reader.onload = function (eRead) {
                         let raw = eRead.target.result;
 
+                        if (file.name.endsWith('.csv')) {
+                            Settings.restoreData(raw, gettext.__('Damaged backup file'));
+
+                            return;
+                        }
+
                         DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
                             if (typeof args.result === 'undefined' || args.result.length === 0) {
                                 return;
                             }
 
-                            let csv = Utils.String.rc4(args.result, raw),
-                                data = Papa.parse(csv, {
-                                    header: true,
-                                    dynamicTyping: true
-                                });
+                            let csv = Utils.String.rc4(args.result, raw);
 
-                            promptOptions.okText = gettext.__('OK');
-
-                            if (data.errors.length > 0) {
-                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
-                            } else {
-                                db.idioms.clear().then(function () {
-                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
-                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
-                                    }).catch(Dexie.BulkError, function (err) {
-                                        console.error(err);
-                                    });
-                                });
-                            }
+                            Settings.restoreData(csv, gettext.__('Invalid password or damaged backup file'));
                         });
                     }
                 };
