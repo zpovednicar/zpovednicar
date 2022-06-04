@@ -107,7 +107,7 @@ sinner(function () {
             ]),
             emoji: {
                 pickerOptions: {
-                    // showCategoryTabs: false,
+                    emojiVersion: '13.1', // js-emoji v3.7.0 uses Emoji 13.1 (emoji-data v7.0.2)
                     showVariants: false,
                     emojiSize: '2em',
                     i18n: {
@@ -1873,10 +1873,8 @@ sinner(function () {
             };
             marked.setOptions(config.parserOptions);
             marked.use({renderer});
-            marked.emojiConvertor = new EmojiConvertor();
+            marked.emojiConvertor = new EmojiConvertor(); // js-emoji v3.7.0 uses Emoji 13.1 (emoji-data v7.0.2)
             marked.emojiConvertor.allow_caps = true;
-// marked.emojiConvertor.allow_native = false;
-// marked.emojiConvertor.replace_mode = 'css';
             marked.emojiConvertor.use_sheet = true;
             marked.emojiConvertor.img_set = 'apple';
             marked.emojiConvertor.img_sets.apple.sheet = 'https://cdn.panicove.cz/img/sheet_apple_64.png?emoji-data=v7.0.2';
