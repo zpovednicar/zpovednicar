@@ -170,7 +170,6 @@ img.avatar {
     font-family: 'Times New Roman', Times, serif, 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI',
     'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'EmojiOne Color',
     'Android Emoji';
-    padding: 10px;
 }
 
 .markdownParsed p,
