@@ -1869,6 +1869,25 @@ sinner(function () {
                 return emoji;
             };
 
+            let menuItems = document.querySelectorAll('td.topheader td.topmenu');
+
+            if (menuItems.length > 0) {
+                let lastItem = menuItems[menuItems.length - 1],
+                    tdSeparator = lastItem.previousElementSibling.cloneNode(true),
+                    td = Object.assign(document.createElement('td'), {
+                        className: 'topmenu'
+                    }),
+                    a = Object.assign(document.createElement('a'), {href: '#'}),
+                    text = document.createTextNode(gettext.__('SINNER'));
+
+                a.appendChild(text);
+                a.addEventListener('click', this.modal);
+                td.appendChild(a);
+
+                lastItem.after(tdSeparator);
+                tdSeparator.after(td);
+            }
+
             return this;
         }
 
@@ -2829,8 +2848,8 @@ sinner(function () {
             page = new StatsPage;
             break;
         default:
-            console.error('ZPOVEDNICAR unknown page ' + path);
-            return;
+            page = new Page;
+            break;
     }
 
     Utils.Css.initializeStylesheet();

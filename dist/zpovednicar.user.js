@@ -9,7 +9,9 @@
 // @updateURL    https://www.zpovednicar.cz/userscripts/zpovednicar.meta.js
 // @downloadURL  https://www.zpovednicar.cz/userscripts/zpovednicar.user.js
 // @namespace    zpovednicar.cz
-// @include      /^https:\/\/(www\.)?(zpovednice\.(cz|eu)|spovednica\.sk)(\/?|\/(index|detail|souhlas|souhlasr|vlastnizp|profil|kniha|stat|zpovperl)\.php(\?.*)?)$/
+// @match        https://*.zpovednice.cz/*
+// @match        https://*.zpovednice.eu/*
+// @match        https://*.spovednica.sk/*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=www.zpovednice.eu
 // @resource     CSS_TINGLE https://cdnjs.cloudflare.com/ajax/libs/tingle/0.16.0/tingle.min.css
 // @resource     CSS_TABBY  https://cdn.jsdelivr.net/gh/cferdinandi/tabby@12/dist/css/tabby-ui.min.css
