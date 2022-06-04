@@ -1875,6 +1875,8 @@ sinner(function () {
             marked.use({renderer});
             marked.emojiConvertor = new EmojiConvertor();
             marked.emojiConvertor.allow_caps = true;
+            marked.emojiConvertor.use_sheet = true;
+            marked.emojiConvertor.img_sets.apple.sheet = 'https://cdn.panicove.cz/img/sheet_apple_64.png';
             marked.emojiConvertor.hex2colons = function (hexcode, emoji) {
                 hexcode = hexcode.toLowerCase();
 
