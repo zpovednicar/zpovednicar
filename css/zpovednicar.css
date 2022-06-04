@@ -140,6 +140,10 @@ img.avatar {
     vertical-align: bottom;
 }
 
+span.emoji-outer {
+    vertical-align: middle;
+}
+
 .CodeMirror-code {
     font-family: tahoma, arial;
     font-size: 13px;
