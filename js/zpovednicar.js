@@ -160,8 +160,8 @@ sinner(function () {
                 USE_PROFILES: {html: true},
                 FORBID_TAGS: ['style'],
                 // FORBID_ATTR: ['style'], // when forbidden, it breaks CSS fallback for stripe emojis on Windows
-                ALLOW_ARIA_ATTR: false,
-                ALLOW_DATA_ATTR: false
+                // ALLOW_ARIA_ATTR: false, // when forbidden, it breaks mermaid's SVG
+                // ALLOW_DATA_ATTR: false // when forbidden, it breaks mermaid's SVG
             },
             parserOptions: {
                 // https://marked.js.org/using_advanced#options
@@ -2204,6 +2204,10 @@ sinner(function () {
                         className: 'userLinks'
                     });
 
+                if (container2.querySelector('td.infortext')) {
+                    return;
+                }
+
                 // all quote authors are rendered as unregistered
                 if (!isQuotes
                     && config.hideUnregistered
@@ -2291,6 +2295,10 @@ sinner(function () {
                     textEl = nickEl.previousElementSibling.firstElementChild,
                     wrappedEl = textEl.querySelector('span.originalContent'),
                     toHide = [nickEl, headEl, textEl.parentElement];
+
+                if (textEl.classList.contains('infortext')) {
+                    return;
+                }
 
                 if (!wrappedEl) {
                     textEl.innerHTML = '<span class="originalContent">' + textEl.innerHTML + '</span>';
