@@ -1030,8 +1030,8 @@ sinner(function () {
                             .replace(/<[ /subpmark]*>/g, function (tag) {
                                 return tag.replace(/\s+/g, '');
                             })
-                            // markdown links and images https://regexr.com/6mtju
-                            .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
+                            // markdown links and images https://regexr.com/6n3ct
+                            .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
                                 return link.replace(/\s+/g, '');
                             }),
                         markdown = marked.emojiConvertor.replace_unified(
