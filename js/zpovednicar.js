@@ -160,8 +160,8 @@ sinner(function () {
                 USE_PROFILES: {html: true},
                 FORBID_TAGS: ['style'],
                 // FORBID_ATTR: ['style'], // when forbidden, it breaks CSS fallback for stripe emojis on Windows
-                ALLOW_ARIA_ATTR: false,
-                ALLOW_DATA_ATTR: false
+                // ALLOW_ARIA_ATTR: false, // when forbidden, it breaks mermaid's SVG
+                // ALLOW_DATA_ATTR: false // when forbidden, it breaks mermaid's SVG
             },
             parserOptions: {
                 // https://marked.js.org/using_advanced#options
