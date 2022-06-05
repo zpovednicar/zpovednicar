@@ -1,6 +1,11 @@
 'use strict';
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_CUSTOM']) {
+document.getElementsByTagName('head')[0].appendChild(Object.assign(document.createElement('link'), {
+    rel: 'stylesheet',
+    href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
+}));
+
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EMOJI', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
     GM_addStyle(GM_getResourceText(resource));
 }
 
@@ -48,18 +53,18 @@ sinner(function () {
                 ['www.zpovednice.cz', 'www.zpovednice.cz'],
                 ['www.spovednica.sk', 'www.spovednica.sk']
             ]),
-            hideDeleted: GM_getValue('sinner.hideDeleted', false),
+            hideDeleted: GM_getValue('sinner.hideDeleted', true),
             hideUnregistered: GM_getValue('sinner.hideUnregistered', false),
-            questions: new Map([
-                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
-                ['ul#hideUser', gettext.__('Really delete hidden user?')],
-                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
-                ['ul#hideWord', gettext.__('Really delete hidden term?')]
-            ]),
             transformAnchors: GM_getValue('sinner.transformAnchors', false),
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
+            useMarkdown: GM_getValue('sinner.useMarkdown', 2),
+            useMarkdowns: new Map([
+                [0, gettext.__('-- do not use --')],
+                [1, gettext.__('Format selected only')],
+                [2, gettext.__('Format everything')]
+            ]),
             youtubeThumbnail: GM_getValue('sinner.youtubeThumbnail', 1),
             youtubeThumbnails: new Map([
                 [0, {
@@ -93,6 +98,282 @@ sinner(function () {
                     height: 360,
                     pattern: 'https://img.youtube.com/vi/[id]/hqdefault.jpg'
                 }]
+            ]),
+            questions: new Map([
+                ['ul#highlightUser', gettext.__('Really delete highlighted user?')],
+                ['ul#hideUser', gettext.__('Really delete hidden user?')],
+                ['ul#highlightWord', gettext.__('Really delete highlighted term?')],
+                ['ul#hideWord', gettext.__('Really delete hidden term?')]
+            ]),
+            emoji: {
+                pickerOptions: {
+                    emojiVersion: '13.1', // js-emoji v3.7.0 uses Emoji 13.1 (emoji-data v7.0.2)
+                    showVariants: false,
+                    emojiSize: '2em',
+                    i18n: {
+                        'categories.activities': gettext.__('Activities'),
+                        'categories.animals-nature': gettext.__('Animals & Nature'),
+                        'categories.custom': gettext.__('Custom'),
+                        'categories.flags': gettext.__('Flags'),
+                        'categories.food-drink': gettext.__('Food & Drink'),
+                        'categories.objects': gettext.__('Objects'),
+                        'categories.people-body': gettext.__('People & Body'),
+                        'categories.recents': gettext.__('Recently Used'),
+                        'categories.smileys-emotion': gettext.__('Smileys & Emotion'),
+                        'categories.symbols': gettext.__('Symbols'),
+                        'categories.travel-places': gettext.__('Travel & Places'),
+                        'error.load': gettext.__('Failed to load emojis'),
+                        'recents.clear': gettext.__('Clear recent emojis'),
+                        'recents.none': gettext.__("You haven't selected any emojis yet."),
+                        'retry': gettext.__('Try again'),
+                        'search.clear': gettext.__('Clear search'),
+                        'search.error': gettext.__('Failed to search emojis'),
+                        'search.notFound': gettext.__('No results found'),
+                        'search': gettext.__('Search emojis...')
+                    }
+                },
+                popupOptions: {
+                    className: 'picmoPopup',
+                    // https://popper.js.org/docs/v2/constructors/#options
+                    // position: 'auto'
+                    // position: 'auto-start'
+                    // position: 'auto-end'
+                    // position: 'top'
+                    // position: 'top-start'
+                    // position: 'top-end'
+                    // position: 'bottom'
+                    // position: 'bottom-start'
+                    // position: 'bottom-end'
+                    // position: 'right'
+                    // position: 'right-start'
+                    // position: 'right-end'
+                    // position: 'left'
+                    position: 'left-start'
+                    // position: 'left-end'
+                }
+            },
+            mermaidOptions: {
+                // https://mermaid.live/
+                startOnLoad: false
+            },
+            sanitizerOptions: {
+                USE_PROFILES: {html: true},
+                FORBID_TAGS: ['style'],
+                // FORBID_ATTR: ['style'], // when forbidden, it breaks CSS fallback for stripe emojis on Windows
+                // ALLOW_ARIA_ATTR: false, // when forbidden, it breaks mermaid's SVG
+                // ALLOW_DATA_ATTR: false // when forbidden, it breaks mermaid's SVG
+            },
+            parserOptions: {
+                // https://marked.js.org/using_advanced#options
+                headerIds: false
+            },
+            editorOptions: {
+                // https://github.com/Ionaru/easy-markdown-editor#options-list
+                autoDownloadFontAwesome: false,
+                autosave: {
+                    enabled: true,
+                    text: gettext.__('saved: '),
+                    timeFormat: {
+                        locale: 'cs-CZ',
+                        format: {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit'
+                        },
+                    }
+                },
+                unorderedListStyle: '-',
+                forceSync: true,
+                indentWithTabs: false,
+                previewRender: function (text, el) {
+                    setTimeout(function () {
+                        mermaid.init(undefined, el.querySelectorAll('div.mermaid'));
+                    }, 100);
+
+                    return Utils.String.parseMarkdown(
+                        Utils.String.parseEmojis(text)
+                    );
+                },
+                // lineWrapping: false
+                renderingConfig: {
+                    headerIds: false,
+                    breaks: true,
+                    sanitizerFunction: function (dirty) {
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // return DOMPurify.sanitize(dirty);
+                        return DOMPurify.sanitize(dirty, config.sanitizerOptions);
+                    }
+                },
+                placeholder: gettext.__('start typing here...'),
+                promptTexts: {
+                    image: gettext.__('URL of the image:'),
+                    link: gettext.__('URL for the link:')
+                },
+                spellChecker: false,
+                sideBySideFullscreen: false,
+                status: ['autosave'],
+                toolbar: [
+                    {
+                        name: 'bold',
+                        action: EasyMDE.toggleBold,
+                        className: 'fa fa-bold',
+                        title: gettext.__('Bold')
+                    },
+                    {
+                        name: 'italic',
+                        action: EasyMDE.toggleItalic,
+                        className: 'fa fa-italic',
+                        title: gettext.__('Italic')
+                    },
+                    {
+                        name: 'strikethrough',
+                        action: EasyMDE.toggleStrikethrough,
+                        className: 'fa fa-strikethrough',
+                        title: gettext.__('Strikethrough')
+                    },
+                    {
+                        name: 'heading',
+                        action: EasyMDE.toggleHeadingSmaller,
+                        className: 'fa fa-header fa-heading',
+                        title: gettext.__('Heading')
+                    },
+                    '|',
+                    {
+                        name: 'unordered-list',
+                        action: EasyMDE.toggleUnorderedList,
+                        className: 'fa fa-list-ul',
+                        title: gettext.__('Generic List')
+                    },
+                    {
+                        name: 'ordered-list',
+                        action: EasyMDE.toggleOrderedList,
+                        className: 'fa fa-list-ol',
+                        title: gettext.__('Numbered List')
+                    },
+                    {
+                        name: 'quote',
+                        action: EasyMDE.toggleBlockquote,
+                        className: 'fa fa-quote-left',
+                        title: gettext.__('Quote')
+                    },
+                    {
+                        name: 'code',
+                        action: EasyMDE.toggleCodeBlock,
+                        className: 'fa fa-code',
+                        title: gettext.__('Code')
+                    },
+                    '|',
+                    {
+                        name: 'link',
+                        action: EasyMDE.drawLink,
+                        className: 'fa fa-link',
+                        title: gettext.__('Create Link')
+                    },
+                    {
+                        name: 'image',
+                        action: EasyMDE.drawImage,
+                        className: 'fa fa-image',
+                        title: gettext.__('Insert Image')
+                    },
+                    {
+                        name: 'table',
+                        action: EasyMDE.drawTable,
+                        className: 'fa fa-table',
+                        title: gettext.__('Insert Table')
+                    },
+                    {
+                        name: 'horizontal-rule',
+                        action: EasyMDE.drawHorizontalRule,
+                        className: 'fa fa-minus',
+                        title: gettext.__('Insert Horizontal Line')
+                    },
+                    '|',
+                    {
+                        name: 'preview',
+                        action: EasyMDE.togglePreview,
+                        className: 'fa fa-eye',
+                        noDisable: true,
+                        title: gettext.__('Toggle Preview')
+                    },
+                    {
+                        name: 'side-by-side',
+                        action: EasyMDE.toggleSideBySide,
+                        className: 'fa fa-columns',
+                        noDisable: true,
+                        noMobile: true,
+                        title: gettext.__('Toggle Side by Side')
+                    },
+                    {
+                        name: 'fullscreen',
+                        action: EasyMDE.toggleFullScreen,
+                        className: 'fa fa-arrows-alt',
+                        noDisable: true,
+                        noMobile: true,
+                        title: gettext.__('Toggle Fullscreen')
+                    },
+                    '|',
+                    {
+                        name: 'undo',
+                        action: EasyMDE.undo,
+                        className: 'fa fa-undo',
+                        noDisable: true,
+                        title: gettext.__('Undo')
+                    },
+                    {
+                        name: 'redo',
+                        action: EasyMDE.redo,
+                        className: 'fa fa-repeat fa-redo',
+                        noDisable: true,
+                        title: gettext.__('Redo')
+                    },
+                    '|',
+                    {
+                        name: 'emoji',
+                        action: function (editor) {
+                            editor.emojiPicker.open();
+                        },
+                        className: 'fa-regular fa-face-smile',
+                        attributes: {
+                            id: 'emojiTrigger'
+                        },
+                        // noDisable: true,
+                        title: gettext.__('Emojis')
+                    },
+                    {
+                        name: 'mermaid',
+                        action: 'https://mermaid.live/',
+                        className: 'fas fa-diagram-project',
+                        noDisable: true,
+                        title: gettext.__('Mermaid live editor')
+                    },
+                    {
+                        name: 'guide',
+                        action: 'https://www.markdownguide.org/basic-syntax/',
+                        className: 'fa fa-question-circle',
+                        noDisable: true,
+                        title: gettext.__('Markdown Guide')
+                    }
+                ]
+            },
+            smileys: new Map([
+                ['s1.gif', ':-D'],
+                ['s15.gif', ':oD'],
+                ['s2.gif', ':-))'],
+                ['s3.gif', ':-)'],
+                ['s4.gif', ';-)'],
+                ['s5.gif', ':-P'],
+                ['s16.gif', ':oP'],
+                ['s17.gif', '%-)'],
+                ['s6.gif', ':-|'],
+                ['s7.gif', ':-/'],
+                ['s8.gif', ':('],
+                ['s12.gif', 'X[]'],
+                ['s9.gif', ':´-('],
+                ['s19.gif', ':´o('],
+                ['s10.gif', ':-O'],
+                ['s11.gif', 'B-]'],
+                ['s13.gif', ':_)'],
+                ['s18.gif', ':-!']
             ])
         },
         cssRules = new Map([
@@ -127,6 +408,15 @@ sinner(function () {
                     ['background-color', config.color]
                 ]),
                 index: 3
+            }],
+            ['markdownHighlightMark', {
+                selector: 'mark',
+                style: new Map([
+                    ['color', '#000000'],
+                    ['padding', '0.1rem'],
+                    ['background-color', config.color]
+                ]),
+                index: 4
             }]
         ]),
         Events = {
@@ -154,6 +444,7 @@ sinner(function () {
                     Utils.Css.setStyle('postHighlightUser', 'color', new_value);
                     Utils.Css.setStyle('statsHighlightUser', 'color', new_value);
                     Utils.Css.setStyle('pageHighlightWord', 'background-color', new_value);
+                    Utils.Css.setStyle('markdownHighlightMark', 'background-color', new_value);
 
                     if (typeof settingsModal !== 'undefined' && remote) {
                         document.getElementById('colorPicker').value = config.color;
@@ -187,11 +478,47 @@ sinner(function () {
                     await page.processTexts();
                     page.displayCounters();
                 },
+                useMarkdownChangeListener: async function (key, old_value, new_value, remote) {
+                    config.useMarkdown = new_value;
+
+                    page.resetNicks();
+                    page.resetTexts();
+                    await page.processNicks();
+                    await page.processTexts();
+
+                    if (typeof page.editor === 'undefined') {
+                        return;
+                    }
+
+                    if (new_value > 1) {
+                        if (typeof page.editor !== 'object') {
+                            page.editor = Utils.Dom.createMarkdownEditor();
+                        }
+                    } else if (typeof page.editor === 'object') {
+                        page.editor.emojiPicker.destroy();
+                        page.editor.emojiPicker = null;
+                        page.editor.toTextArea();
+                        page.editor.cleanup();
+                        page.editor = null;
+                    }
+                },
                 youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
                     config.youtubeThumbnail = new_value;
                     page.resetTexts();
                     await page.processTexts();
                     page.displayCounters();
+                }
+            },
+            Editor: {
+                smileyClickListener: function (e) {
+                    e.preventDefault();
+
+                    let src = e.target.src.split('/').pop(),
+                        smile = (config.smileys.get(src) + ' '),
+                        doc = page.editor.codemirror.getDoc(),
+                        cursor = doc.getCursor();
+
+                    doc.replaceRange(smile, cursor);
                 }
             },
             Modal: {
@@ -265,11 +592,12 @@ sinner(function () {
                         });
                     });
                 },
-                removeClass: function (classNames) {
+                removeClass: function (classNames, parentNode) {
                     classNames = typeof classNames === 'string' ? [classNames] : classNames;
+                    parentNode = parentNode || document;
 
                     classNames.forEach(function (className) {
-                        document.querySelectorAll('.' + className).forEach(function (el) {
+                        parentNode.querySelectorAll('.' + className).forEach(function (el) {
                             el.classList.remove(className);
                         });
                     });
@@ -281,6 +609,36 @@ sinner(function () {
                 }
             },
             Dom: {
+                createMarkdownEditor: function () {
+                    let options = config.editorOptions,
+                        uniqueId = (typeof page.editorUniqueId === 'undefined' ? false : page.editorUniqueId);
+
+                    if (uniqueId) {
+                        options.autosave.uniqueId = uniqueId;
+                    } else {
+                        options.autosave.enabled = false;
+                        options.status = false;
+                    }
+
+                    let editor = new EasyMDE(options),
+                        popupTrigger = document.getElementById('emojiTrigger'),
+                        popupOptions = Object.assign(config.emoji.popupOptions, {
+                            referenceElement: popupTrigger,
+                            triggerElement: popupTrigger
+                        });
+
+                    editor.emojiPicker = picmoPopup.createPopup(config.emoji.pickerOptions, popupOptions);
+
+                    editor.emojiPicker.addEventListener('emoji:select', function (selection) {
+                        let doc = editor.codemirror.getDoc(),
+                            cursor = doc.getCursor(),
+                            emoji = marked.emojiConvertor.hex2colons(selection.hexcode, selection.emoji);
+
+                        doc.replaceRange(emoji, cursor);
+                    });
+
+                    return editor;
+                },
                 embedHideUserLink: function (el, nick, hidden) {
                     hidden = hidden || false;
 
@@ -300,7 +658,6 @@ sinner(function () {
                             alt: gettext.__('Hide nick')
                         });
 
-                    link.appendChild(linkContent);
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
@@ -312,6 +669,7 @@ sinner(function () {
                         }
                     });
 
+                    link.appendChild(linkContent);
                     el.prepend(link);
                     el.insertAdjacentHTML('afterbegin', '&nbsp;');
                 },
@@ -333,7 +691,6 @@ sinner(function () {
                             alt: gettext.__('Highlight nick')
                         });
 
-                    link.appendChild(linkContent);
                     link.addEventListener('click', function (e) {
                         e.preventDefault();
                         e.target.parentElement.parentElement.remove();
@@ -345,26 +702,122 @@ sinner(function () {
                         }
                     });
 
+                    link.appendChild(linkContent);
+                    el.prepend(link);
+                    el.insertAdjacentHTML('afterbegin', '&nbsp;');
+                },
+                embedMarkdownEditorSwitcher: function (text) {
+                    let parent = document.querySelector('textarea').parentElement,
+                        withEditor = (config.useMarkdown > 1),
+                        link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: (withEditor ? gettext.__('Hide text editor') : gettext.__('Show text editor'))
+                        }),
+                        linkContent = Object.assign(document.createElement('span'), {
+                            className: 'fas ' + (withEditor ? 'fa-eye-slash' : 'fa-eye')
+                        });
+
+                    parent.innerHTML = Utils.String.wrapAll(parent, [text], page.editorSwitcher);
+                    link.appendChild(linkContent);
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+
+                        if (e.target.classList.contains('fa-eye-slash')) {
+                            page.editor.toTextArea();
+                            page.editor.cleanup();
+                            page.editor = null;
+                            e.target.classList.remove('fa-eye-slash')
+                            e.target.classList.add('fa-eye')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show text editor'));
+                        } else {
+                            page.editor = Utils.Dom.createMarkdownEditor();
+                            e.target.classList.remove('fa-eye')
+                            e.target.classList.add('fa-eye-slash')
+                            e.target.parentElement.setAttribute('title', gettext.__('Hide text editor'));
+                        }
+
+                        document.querySelectorAll('a.forTextarea, a.forEditor').forEach(function (anchor) {
+                            anchor.classList.toggle('hiddenSmiley');
+                        });
+                    });
+
+                    parent.querySelectorAll('a > img').forEach(function (emo) {
+                        let img = emo.src.split('/').pop();
+
+                        if (!config.smileys.has(img)) {
+                            return;
+                        }
+
+                        let anchor = emo.parentElement,
+                            clone = anchor.cloneNode(true);
+
+                        anchor.classList.add('forTextarea');
+                        clone.classList.add('forEditor');
+
+                        if (withEditor) {
+                            anchor.classList.add('hiddenSmiley');
+                        } else {
+                            clone.classList.add('hiddenSmiley');
+                        }
+
+                        clone.onclick = Events.Editor.smileyClickListener;
+                        anchor.after(clone);
+                    });
+
+                    let switcher = document.querySelector('span.' + page.editorSwitcher);
+
+                    switcher.insertAdjacentHTML('afterbegin', '&nbsp;');
+                    switcher.prepend(link);
+
+                },
+                embedMarkdownParserLink: function (el, textEl) {
+                    let link = Object.assign(document.createElement('a'), {
+                            href: '#',
+                            title: (config.useMarkdown > 1 ? gettext.__('Show original text') : gettext.__('Show formatted text'))
+                        }),
+                        linkContent = Object.assign(document.createElement('span'), {
+                            className: 'fas ' + (config.useMarkdown > 1 ? 'fa-eye-slash' : 'fa-eye')
+                        });
+
+                    link.addEventListener('click', function (e) {
+                        e.preventDefault();
+
+                        if (e.target.classList.contains('fa-eye-slash')) {
+                            textEl.parentElement.querySelector('.parsedContent').remove();
+                            textEl.parentElement.querySelector('.originalContent').classList.remove('unparsedContent');
+                            e.target.classList.remove('fa-eye-slash')
+                            e.target.classList.add('fa-eye')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show formatted text'));
+                        } else {
+                            Utils.Dom.transformMarkdownSource(textEl.parentElement.querySelector('.originalContent'));
+                            e.target.classList.remove('fa-eye')
+                            e.target.classList.add('fa-eye-slash')
+                            e.target.parentElement.setAttribute('title', gettext.__('Show original text'));
+                        }
+                    });
+
+                    link.appendChild(linkContent);
                     el.prepend(link);
                 },
-                embedUserLinks: async function (el, nick, highlight, hide) {
+                embedUserLinks: function (el, nick, highlight, hide, markdownEl) {
                     let compressed = Utils.String.compress(nick, true, true, true);
 
-                    if (config.useHiding) {
+                    if (config.useHiding && nick.length) {
                         Utils.Dom.embedHideUserLink(el, nick, hide.includes(compressed));
                     }
 
-                    if (config.useHighlighting) {
+                    if (config.useHighlighting && nick.length) {
                         Utils.Dom.embedHighlightUserLink(el, nick, highlight.includes(compressed));
+                    }
+
+                    if (config.useMarkdown > 0 && markdownEl) {
+                        Utils.Dom.embedMarkdownParserLink(el, markdownEl);
                     }
                 },
                 embedYoutube: function (el) {
                     let regexp = /(?:https?:\/\/)?(?:www\.)?(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))((\w|-){11})(?:\S+)?/g,
                         links = el.querySelectorAll('a')
-
-                    el.querySelectorAll('div.youtubeThumbnails').forEach(function (rel) {
-                        rel.remove();
-                    });
 
                     if (links.length > 0) {
                         links.forEach(function (link) {
@@ -421,14 +874,8 @@ sinner(function () {
                             container.appendChild(img);
                         }
 
-                        el.appendChild(container);
+                        el.parentElement.appendChild(container);
                     });
-                },
-                isVip: function (infoEl) {
-                    let imgs = infoEl.querySelectorAll('img'),
-                        vip = ['cathome', 'cathomeh', 'catclub', 'catclubh', 'catmod', 'catmodh', 'catvip', 'catviph'];
-
-                    return imgs.length && vip.includes(imgs[imgs.length - 1].src.split('/').pop().split('.').shift());
                 },
                 removeAllChildNodes: function (parent) {
                     while (parent.firstChild) {
@@ -498,18 +945,29 @@ sinner(function () {
                         link.removeAttribute('target');
                     });
                 },
-                wrapElementWords(page, selector, highlight, hide) {
-                    document.querySelectorAll(selector).forEach(function (el) {
-                        if (config.useHiding && Utils.String.containsWord(el, hide)) {
-                            page.counterWords++;
-                            el.parentElement.parentElement.classList.add('hiddenWord');
-                            el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
-                        }
+                transformMarkdownSource: function (el) {
+                    let cloned = el.cloneNode();
 
-                        if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
-                            el.innerHTML = Utils.String.wrapAll(el, highlight);
-                        }
+                    cloned.innerHTML = Utils.String.parseMarkdown(el.innerHTML);
+                    cloned.classList.remove('originalContent');
+                    cloned.classList.add('parsedContent');
+                    el.classList.add('unparsedContent');
+                    el.after(cloned);
+
+                    cloned.querySelectorAll('div.mermaid').forEach(function (el) {
+                        mermaid.init(undefined, el);
                     });
+                },
+                wrapElementWords: function (page, el, highlight, hide) {
+                    if (config.useHiding && Utils.String.containsWord(el, hide)) {
+                        page.counterWords++;
+                        el.parentElement.parentElement.parentElement.classList.add('hiddenWord');
+                        el.innerHTML = Utils.String.wrapAll(el, hide, 'strikeWord');
+                    }
+
+                    if (config.useHighlighting && Utils.String.containsWord(el, highlight)) {
+                        el.innerHTML = Utils.String.wrapAll(el, highlight);
+                    }
                 }
             },
             String: {
@@ -546,6 +1004,55 @@ sinner(function () {
                 },
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                },
+                parseEmojis: function (html) {
+                    let text = html.trim()
+                        // encoded unicode characters (mostly native emoticons, but not exclusively)
+                        .replace(/&amp;#/g, '&#')
+                        .replace(/&#\d+;/g, function (encoded) {
+                            return decodeURIComponent(encoded);
+                        });
+
+                    return marked.emojiConvertor.replace_unified(
+                        marked.emojiConvertor.replace_colons(
+                            marked.emojiConvertor.replace_emoticons(text)
+                        )
+                    );
+                },
+                parseMarkdown: function (html) {
+                    let text = html
+                            // common replacements
+                            .replace(/&nbsp;/g, ' ')
+                            .replace(/&quot;/g, '"')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&( )?gt;/g, '>')
+                            /*
+                                TODO fix blockquote marks nested by mistake (ones without previous higher levels)
+                                .replace(/(>)\1+/g, '>')
+                                .replace(/(<)\1+/g, '<')
+                            */
+                            // bold/italic tags
+                            .replace(/<(\/)?b>/g, '**')
+                            .replace(/<(\/)?i>/g, '*')
+                            // line breaks
+                            .replace(/(\s+)?<br( ?\/)?>\s+<br( ?\/)?>(\s+)?/g, '\n\n')
+                            .replace(/(\s+)?<br( ?\/)?>(\s+)?/g, '   \n')
+                            // sub/sup/mark tags https://regexr.com/6mtkv
+                            .replace(/<[ /subpmark]*>/g, function (tag) {
+                                return tag.replace(/\s+/g, '');
+                            })
+                            // markdown links and images https://regexr.com/6n3ct
+                            .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
+                                return link.replace(/\s+/g, '');
+                            }),
+                        //TODO verify that marked.setOptions() in Page.initialize() works as expected
+                        // dirty = marked.parse(sourceWithEmojis),
+                        dirty = marked.parse(text, config.parserOptions),
+                        //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
+                        // clean = DOMPurify.sanitize(dirty);
+                        clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
+
+                    return clean;
                 },
                 rc4: function (key, str) {
                     let s = [],
@@ -664,6 +1171,10 @@ sinner(function () {
                         idioms: '$$uuid, [subject+highlight], content'
                     });
 
+                    database.on('populate', function (transaction) {
+                        transaction.idioms.add({subject: 'user', highlight: 0, content: 'Administrátor'});
+                    });
+
                     database.open().catch(function (e) {
                         console.error('Failed to open database: ' + e.stack);
                     });
@@ -732,17 +1243,20 @@ sinner(function () {
                         return;
                     }
 
-                    DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
-                        if (typeof args.result === 'undefined' || args.result.length === 0) {
+                    let modalText = gettext.__('Password for the backup file') + '<br><br>' + gettext.__('(enter empty password for no encryption)');
+
+                    DayPilot.Modal.prompt(modalText, promptOptions).then(function (args) {
+                        if (typeof args.result === 'undefined') {
                             return;
                         }
 
                         let csv = Papa.unparse(data, {
                                 quotes: true
                             }),
-                            encrypted = Utils.String.rc4(args.result, csv),
-                            blob = new Blob([encrypted]),
-                            filename = 'zpovednicar-' + (new Date()).toISOString() + '.data';
+                            useEncryption = args.result.length > 0,
+                            output = (useEncryption ? Utils.String.rc4(args.result, csv) : csv),
+                            blob = new Blob([output]),
+                            filename = 'zpovednicar-' + (new Date()).toISOString() + (useEncryption ? '.data' : '.csv');
 
                         window.saveAs(blob, filename);
                         DayPilot.Modal.alert(gettext.__('Successful backup, downloading file %1%2', '<br><br>', filename), promptOptions);
@@ -959,13 +1473,14 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    gettext.__('Thumbnails of Youtube videos') +
+                    '<span class="fas fa-eye"></span>&nbsp;' +
+                    gettext.__('Use formatted text') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<select id="youtubeThumbnail">';
-                config.youtubeThumbnails.forEach(function (thumb, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
+                    '<select id="useMarkdown">';
+                config.useMarkdowns.forEach(function (label, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.useMarkdown ? ' selected' : '') + '>' + label + '</option>';
                 })
                 modalContent +=
                     '</select>' +
@@ -974,14 +1489,14 @@ sinner(function () {
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    gettext.__('Enforce domain') +
+                    gettext.__('Thumbnails of Youtube videos') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
                     '<p>' +
-                    '<select id="enforceDomain">';
-                config.domains.forEach(function (value, key) {
-                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                    '<select id="youtubeThumbnail">';
+                config.youtubeThumbnails.forEach(function (thumb, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.youtubeThumbnail ? ' selected' : '') + '>' + thumb.label + '</option>';
                 })
                 modalContent +=
                     '</select>' +
@@ -990,21 +1505,36 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    gettext.__('Color for highlighting') +
+                    gettext.__('Enforce domain') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
+                    '<select id="enforceDomain">';
+                config.domains.forEach(function (value, key) {
+                    modalContent += '<option value="' + key + '"' + (key === config.domain ? ' selected' : '') + '>' + value + '</option>';
+                })
+                modalContent +=
+                    '</select>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
                     '<p>' +
-                    gettext.__('Database backup') +
+                    gettext.__('Color for highlighting') +
                     ':</p>' +
                     '</div>' +
                     '<div class="column-narrow">' +
-                    '<p>';
+                    '<p>' +
+                    '<span class="colorFull"><input type="text" id="colorPicker" value="' + config.color + '"></span>' +
+                    '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    gettext.__('Database backup') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column-narrow">';
                 if (isFileSaverSupported) {
                     modalContent +=
                         '<button id="settingsBackup">' + gettext.__('Backup') + '</button>' +
@@ -1014,7 +1544,6 @@ sinner(function () {
                     modalContent += gettext.__('Not supported by your browser');
                 }
                 modalContent +=
-                    '</p>' +
                     '</div>' +
                     '</div>' +
                     '</div>';
@@ -1026,6 +1555,9 @@ sinner(function () {
                 };
                 document.getElementById('youtubeThumbnail').onchange = function (e) {
                     GM_setValue('sinner.youtubeThumbnail', parseInt(e.target.value))
+                };
+                document.getElementById('useMarkdown').onchange = function (e) {
+                    GM_setValue('sinner.useMarkdown', parseInt(e.target.value))
                 };
 
                 document.querySelectorAll('input[name="useHighlighting"]').forEach(function (input) {
@@ -1163,6 +1695,29 @@ sinner(function () {
                     console.error(err);
                 });
             },
+            restoreData: function (csv, errorMessage) {
+                let promptOptions = {
+                        okText: gettext.__('OK'),
+                        cancelText: gettext.__('Cancel'),
+                        container: document.querySelector('div.tingle-modal-box__content')
+                    },
+                    data = Papa.parse(csv, {
+                        header: true,
+                        dynamicTyping: true
+                    });
+
+                if (data.errors.length > 0) {
+                    DayPilot.Modal.alert(errorMessage, promptOptions);
+                } else {
+                    db.idioms.clear().then(function () {
+                        db.idioms.bulkPut(data.data).then(function (lastKey) {
+                            DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
+                        }).catch(Dexie.BulkError, function (err) {
+                            console.error(err);
+                        });
+                    });
+                }
+            },
             restore: function () {
                 let promptOptions = {
                         okText: gettext.__('Send'),
@@ -1182,30 +1737,20 @@ sinner(function () {
                     reader.onload = function (eRead) {
                         let raw = eRead.target.result;
 
+                        if (file.name.endsWith('.csv')) {
+                            Settings.restoreData(raw, gettext.__('Damaged backup file'));
+
+                            return;
+                        }
+
                         DayPilot.Modal.prompt(gettext.__('Password for the backup file'), promptOptions).then(function (args) {
                             if (typeof args.result === 'undefined' || args.result.length === 0) {
                                 return;
                             }
 
-                            let csv = Utils.String.rc4(args.result, raw),
-                                data = Papa.parse(csv, {
-                                    header: true,
-                                    dynamicTyping: true
-                                });
+                            let csv = Utils.String.rc4(args.result, raw);
 
-                            promptOptions.okText = gettext.__('OK');
-
-                            if (data.errors.length > 0) {
-                                DayPilot.Modal.alert(gettext.__('Invalid password or damaged backup file'), promptOptions);
-                            } else {
-                                db.idioms.clear().then(function () {
-                                    db.idioms.bulkPut(data.data).then(function (lastKey) {
-                                        DayPilot.Modal.alert(gettext.__('Successful restore from backup'), promptOptions);
-                                    }).catch(Dexie.BulkError, function (err) {
-                                        console.error(err);
-                                    });
-                                });
-                            }
+                            Settings.restoreData(csv, gettext.__('Invalid password or damaged backup file'));
                         });
                     }
                 };
@@ -1228,13 +1773,12 @@ sinner(function () {
             this.counterNicks = 0;
             this.counterWords = 0;
             this.countersContainer = 'countersContainer';
-
-            this.initialize();
+            this.editorSwitcher = 'editorSwitcher';
         }
 
         displayCounters() {
             let self = this,
-                container = document.getElementById(this.countersContainer),
+                container = document.getElementById(self.countersContainer),
                 links = new Map([
                     ['counterWords', {
                         action: 'resetTexts',
@@ -1315,9 +1859,61 @@ sinner(function () {
             GM_addValueChangeListener('sinner.highlightColor', Events.Config.highlightColorChangeListener);
             GM_addValueChangeListener('sinner.useHiding', Events.Config.useHidingChangeListener);
             GM_addValueChangeListener('sinner.useHighlighting', Events.Config.useHighlightingChangeListener);
+            GM_addValueChangeListener('sinner.useMarkdown', Events.Config.useMarkdownChangeListener);
             GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
             GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
+
+            DOMPurify.setConfig(config.sanitizerOptions);
+
+            mermaid.mermaidAPI.initialize(config.mermaidOptions);
+
+            const renderer = {
+                code(code, infostring, escaped) {
+                    if (infostring === 'mermaid') {
+                        return '<div class="mermaid">' + code + '</div>';
+                    }
+
+                    return '<pre><code class="language-' + infostring + '">' + code + '</code></pre>';
+                }
+            };
+            marked.setOptions(config.parserOptions);
+            marked.use({renderer});
+            marked.emojiConvertor = new EmojiConvertor(); // js-emoji v3.7.0 uses Emoji 13.1 (emoji-data v7.0.2)
+            marked.emojiConvertor.allow_caps = true;
+            marked.emojiConvertor.use_sheet = true;
+            marked.emojiConvertor.img_set = 'apple';
+            marked.emojiConvertor.img_sets.apple.sheet = 'https://cdn.panicove.cz/img/sheet_apple_64.png?emoji-data=v7.0.2';
+            marked.emojiConvertor.hex2colons = function (hexcode, emoji) {
+                hexcode = hexcode.toLowerCase();
+
+                if (typeof marked.emojiConvertor.data[hexcode] !== 'undefined') {
+                    return (':' + marked.emojiConvertor.data[hexcode][3][0] + ':');
+                }
+
+                return emoji;
+            };
+
+            let menuItems = document.querySelectorAll('td.topheader td.topmenu');
+
+            if (menuItems.length > 0) {
+                let lastItem = menuItems[menuItems.length - 1],
+                    tdSeparator = lastItem.previousElementSibling.cloneNode(true),
+                    td = Object.assign(document.createElement('td'), {
+                        className: 'topmenu'
+                    }),
+                    a = Object.assign(document.createElement('a'), {href: '#'}),
+                    text = document.createTextNode(gettext.__('SINNER'));
+
+                a.appendChild(text);
+                a.addEventListener('click', this.modal);
+                td.appendChild(a);
+
+                lastItem.after(tdSeparator);
+                tdSeparator.after(td);
+            }
+
+            return this;
         }
 
         modal(e) {
@@ -1397,7 +1993,6 @@ sinner(function () {
             Utils.Css.removeClass(['highlightUser', 'strikeUser', 'highlightStatsUser']);
 
             document.querySelectorAll('.userLinks').forEach(function (el) {
-                Utils.Dom.removeAllChildNodes(el);
                 el.remove();
             });
         }
@@ -1416,6 +2011,12 @@ sinner(function () {
             document.querySelectorAll('.highlightWord, .strikeWord').forEach(function (el) {
                 Utils.String.unwrap(el);
             });
+
+            document.querySelectorAll('.parsedContent, .youtubeThumbnails').forEach(function (el) {
+                el.remove();
+            });
+
+            Utils.Css.removeClass('unparsedContent');
         }
 
         resetUnregistered() {
@@ -1452,6 +2053,8 @@ sinner(function () {
             menu.appendChild(a);
 
             document.querySelector('#ixmidst > div.boxheader > span').id = this.countersContainer;
+
+            return this;
         }
 
         async processNicks() {
@@ -1482,20 +2085,37 @@ sinner(function () {
         async processTexts() {
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'li.c3 a, li.c3l a', highlight, hide);
+            document.querySelectorAll('li.c3 a, li.c3l a').forEach(function (el) {
+                Utils.Dom.wrapElementWords(self, el, highlight, hide);
+            });
         }
     }
 
     class PostPage extends Page {
+        constructor() {
+            super();
+
+            let params = new URLSearchParams(window.location.search);
+
+            this.editor = null;
+
+            if (params.has('statusik')) {
+                this.editorUniqueId = 'post_' + params.get('statusik');
+            }
+        }
+
         initialize() {
             super.initialize();
 
             let tables = document.querySelectorAll('body > div > table');
 
             tables[tables.length - 2].querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+
+            return this;
         }
 
         async process() {
@@ -1503,7 +2123,15 @@ sinner(function () {
                 return;
             }
 
-            await super.process();
+            super.process();
+
+            let isQuotes = window.location.pathname.startsWith('/zpovperl.php');
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ROZHŘEŠENÍ:');
+
+            if (!isQuotes && config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
         }
 
         processDeleted() {
@@ -1540,16 +2168,18 @@ sinner(function () {
                 isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 text = el.innerText.trim(),
                 nick = Utils.String.compress(text, true, true, true),
-                parent = el.parentElement.parentElement.parentElement.parentElement.parentElement
-                    .parentElement.parentElement.parentElement.parentElement,
-                info = document.querySelectorAll('td.conftext')[1].querySelectorAll('td.signinfo')[1],
+                parent = el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement.parentElement,
+                infoParent = document.querySelectorAll('td.conftext')[1],
+                infoWrapper = infoParent.classList.contains('parsedContent') ? document.querySelectorAll('td.conftext')[2] : infoParent,
+                info = infoWrapper.querySelectorAll('td.signinfo')[1],
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
                 });
 
             if (config.useHighlighting && highlight.includes(nick)) {
-                if (!parent.classList.contains('highlightUser')) {
-                    parent.classList.add('highlightUser');
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
                 }
             } else if (config.useHiding && hide.includes(nick)) {
                 if (!el.classList.contains('strikeUser')) {
@@ -1559,8 +2189,11 @@ sinner(function () {
 
             // quotes header is rendered without userinfo (system account)
             if (!isQuotes) {
+                info.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, parent.previousElementSibling.firstElementChild);
             }
 
             document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
@@ -1576,6 +2209,10 @@ sinner(function () {
                     linksEl = Object.assign(document.createElement('span'), {
                         className: 'userLinks'
                     });
+
+                if (container2.querySelector('td.infortext')) {
+                    return;
+                }
 
                 // all quote authors are rendered as unregistered
                 if (!isQuotes
@@ -1605,8 +2242,11 @@ sinner(function () {
                     });
                 }
 
+                info.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 info.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, container2.firstElementChild);
             });
         }
 
@@ -1614,19 +2254,142 @@ sinner(function () {
             await super.processTexts();
 
             let self = this,
+                isQuotes = window.location.pathname.startsWith('/zpovperl.php'),
                 highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false),
                 header = document.querySelector('td.confheader'),
                 headers = document.querySelectorAll('td.conftext'),
                 content = headers[0],
-                authorInfo = headers[1].querySelectorAll('td.signinfo')[1];
+                wrapped = content.querySelector('span.originalContent');
+
+            if (!isQuotes) {
+                if (!wrapped) {
+                    content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
+                    wrapped = content.querySelector('span.originalContent');
+                }
+
+                if (config.useHiding) {
+                    if (Utils.String.containsWord(header, hide)) {
+                        header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
+                    }
+                    if (Utils.String.containsWord(wrapped, hide)) {
+                        wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
+                    }
+                }
+
+                if (config.useHighlighting) {
+                    if (Utils.String.containsWord(header, highlight)) {
+                        header.innerHTML = Utils.String.wrapAll(header, highlight);
+                    }
+                    if (Utils.String.containsWord(wrapped, highlight)) {
+                        wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
+                    }
+                }
+
+                if (config.useMarkdown > 1) {
+                    Utils.Dom.transformMarkdownSource(wrapped);
+                }
+
+                if (config.youtubeThumbnail > 0) {
+                    Utils.Dom.embedYoutube(wrapped);
+                }
+            }
+
+            document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
+                let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
+                    headEl = nickEl.previousElementSibling.previousElementSibling,
+                    textEl = nickEl.previousElementSibling.firstElementChild,
+                    wrappedEl = textEl.querySelector('span.originalContent'),
+                    toHide = [nickEl, headEl, textEl.parentElement];
+
+                if (textEl.classList.contains('infortext')) {
+                    return;
+                }
+
+                if (!wrappedEl) {
+                    textEl.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(textEl.innerHTML) + '</span>';
+                    wrappedEl = textEl.querySelector('span.originalContent');
+                }
+
+                if (config.useHiding && Utils.String.containsWord(wrappedEl, hide)) {
+                    self.counterWords++;
+                    wrappedEl.innerHTML = Utils.String.wrapAll(wrappedEl, hide, 'strikeWord');
+
+                    toHide.forEach(function (hel) {
+                        hel.classList.add('hiddenWord');
+                    });
+                }
+
+                if (config.useHighlighting && Utils.String.containsWord(wrappedEl, highlight)) {
+                    wrappedEl.innerHTML = Utils.String.wrapAll(wrappedEl, highlight);
+                }
+
+                if (config.useMarkdown > 1) {
+                    Utils.Dom.transformMarkdownSource(wrappedEl);
+                }
+
+                if (config.youtubeThumbnail > 0) {
+                    Utils.Dom.embedYoutube(wrappedEl);
+                }
+            });
+        }
+    }
+
+    class PostPreviewPage extends Page {
+        async processNicks() {
+            await super.processNicks();
+
+            let highlight = await Utils.Db.getIdioms('user', true, true),
+                hide = await Utils.Db.getIdioms('user', false, true),
+                infos = document.querySelectorAll('td.signinfo'),
+                el = document.querySelector('span.signunreg, span.signnick'),
+                text = el.innerText.trim(),
+                nick = Utils.String.compress(text, true, true, true),
+                info = infos[1],
+                parent = info.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                }),
+                textEl = parent.querySelector('td.conftext');
+
+            if (config.useHighlighting && highlight.includes(nick)) {
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
+                }
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
+                }
+            }
+
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
+            });
+            info.prepend(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
+        }
+
+        async processTexts() {
+            await super.processTexts();
+
+            let highlight = await Utils.Db.getIdioms('word', true),
+                hide = await Utils.Db.getIdioms('word', false),
+                header = document.querySelector('td.confheader'),
+                content = document.querySelector('td.conftext'),
+                wrapped = content.querySelector('span.originalContent');
+
+            if (!wrapped) {
+                content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
+                wrapped = content.querySelector('span.originalContent');
+            }
 
             if (config.useHiding) {
                 if (Utils.String.containsWord(header, hide)) {
                     header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
                 }
-                if (Utils.String.containsWord(content, hide)) {
-                    content.innerHTML = Utils.String.wrapAll(content, hide, 'strikeWord');
+                if (Utils.String.containsWord(wrapped, hide)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
                 }
             }
 
@@ -1634,53 +2397,158 @@ sinner(function () {
                 if (Utils.String.containsWord(header, highlight)) {
                     header.innerHTML = Utils.String.wrapAll(header, highlight);
                 }
-                if (Utils.String.containsWord(content, highlight)) {
-                    content.innerHTML = Utils.String.wrapAll(content, highlight);
+                if (Utils.String.containsWord(wrapped, highlight)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
                 }
             }
 
-            // if (Utils.Dom.isVip(authorInfo)) {
-                Utils.Dom.embedYoutube(content);
-            // }
+            if (config.useMarkdown > 1) {
+                Utils.Dom.transformMarkdownSource(wrapped);
+            }
 
-            document.querySelectorAll('td.signunreg, td.signnick').forEach(function (el) {
-                let nickEl = el.parentElement.parentElement.parentElement.parentElement.parentElement,
-                    headEl = nickEl.previousElementSibling.previousElementSibling,
-                    textEl = nickEl.previousElementSibling.firstElementChild,
-                    toHide = [nickEl, headEl, textEl.parentElement],
-                    isVip = Utils.Dom.isVip(el.nextElementSibling);
+            if (config.youtubeThumbnail > 0) {
+                Utils.Dom.embedYoutube(wrapped);
+            }
+        }
+    }
 
-                if (config.useHiding && Utils.String.containsWord(textEl, hide)) {
-                    self.counterWords++;
-                    textEl.innerHTML = Utils.String.wrapAll(textEl, hide, 'strikeWord');
+    class PostCommentPreviewPage extends Page {
+        async processNicks() {
+            await super.processNicks();
 
-                    toHide.forEach(function (hel) {
-                        hel.classList.add('hiddenWord');
-                    });
+            let highlight = await Utils.Db.getIdioms('user', true, true),
+                hide = await Utils.Db.getIdioms('user', false, true),
+                info = document.querySelector('td.signinfo'),
+                el = document.querySelector('td.signunreg, td.signnick'),
+                text = el.innerText.trim(),
+                nick = Utils.String.compress(text, true, true, true),
+                parent = info.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
+                superParent = parent.parentElement.parentElement,
+                linksEl = Object.assign(document.createElement('span'), {
+                    className: 'userLinks'
+                }),
+                textEl = parent.querySelector('td.absoltext');
+
+            if (config.useHighlighting && highlight.includes(nick)) {
+                if (!superParent.classList.contains('highlightUser')) {
+                    superParent.classList.add('highlightUser');
                 }
-
-                if (config.useHighlighting && Utils.String.containsWord(textEl, highlight)) {
-                    textEl.innerHTML = Utils.String.wrapAll(textEl, highlight);
+            } else if (config.useHiding && hide.includes(nick)) {
+                if (!el.classList.contains('strikeUser')) {
+                    el.classList.add('strikeUser');
                 }
+            }
 
-                // if (isVip) {
-                    Utils.Dom.embedYoutube(textEl);
-                // }
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
             });
+            info.prepend(linksEl);
+            Utils.Dom.embedUserLinks(linksEl, '', [], [], textEl);
+        }
+
+        async processTexts() {
+            await super.processTexts();
+
+            let highlight = await Utils.Db.getIdioms('word', true),
+                hide = await Utils.Db.getIdioms('word', false),
+                content = document.querySelector('td.absoltext'),
+                wrapped = content.querySelector('span.originalContent');
+
+            if (!wrapped) {
+                content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
+                wrapped = content.querySelector('span.originalContent');
+            }
+
+            if (config.useHiding) {
+                if (Utils.String.containsWord(wrapped, hide)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, hide, 'strikeWord');
+                }
+            }
+
+            if (config.useHighlighting) {
+                if (Utils.String.containsWord(wrapped, highlight)) {
+                    wrapped.innerHTML = Utils.String.wrapAll(wrapped, highlight);
+                }
+            }
+
+            if (config.useMarkdown > 1) {
+                Utils.Dom.transformMarkdownSource(wrapped);
+            }
+
+            if (config.youtubeThumbnail > 0) {
+                Utils.Dom.embedYoutube(wrapped);
+            }
+        }
+    }
+
+    class PostAddPage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+            this.editorUniqueId = 'post_new';
+        }
+
+        async process() {
+            super.process();
+
+            let info = document.querySelectorAll('td.infolmenu');
+
+            info[info.length - 1].style.display = 'none';
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZPOVĚDI');
+
+            if (config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
         }
     }
 
     class ProfilePage extends Page {
+        constructor() {
+            super();
+
+            let params = new URLSearchParams(window.location.search);
+
+            this.editor = null;
+
+            if (params.has('kdo')) {
+                this.editorUniqueId = 'profile_' + params.get('kdo');
+            }
+        }
+
         initialize() {
             super.initialize();
 
             let tables = document.querySelectorAll('body > div > table');
 
-            tables[tables.length === 5 ? 4 : 5]
-                .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+            if (tables.length > 4) {
+                tables[tables.length === 5 ? 4 : 5]
+                    .querySelectorAll('tbody > tr td')[1].id = this.countersContainer;
+            }
+
+            return this;
+        }
+
+        async process() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
+            super.process();
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
+
+            if (config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
         }
 
         processAvatars() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             let info = document.querySelectorAll('table.infoltext tbody'),
                 wwwContainer = info[0].children[info[0].children.length - 5];
 
@@ -1698,6 +2566,10 @@ sinner(function () {
         }
 
         async processNicks() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             await super.processNicks();
 
             let self = this,
@@ -1722,6 +2594,9 @@ sinner(function () {
                 }
             }
 
+            info.querySelectorAll('.userLinks').forEach(function (el) {
+                el.remove();
+            });
             info.appendChild(linksEl);
             Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
             linksEl.insertAdjacentHTML('afterbegin', '&nbsp;');
@@ -1754,18 +2629,41 @@ sinner(function () {
                     }
                 }
 
+                el.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
         }
 
         async processTexts() {
+            if (document.querySelectorAll('body > div > table').length < 5) {
+                return;
+            }
+
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
+            document.querySelectorAll('div.guesttext').forEach(function (el) {
+                let wrapped = el.querySelector('span.originalContent')
+
+                if (!wrapped) {
+                    el.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(el.innerHTML) + '</span>';
+                    wrapped = el.querySelector('span.originalContent');
+                }
+
+                Utils.Dom.wrapElementWords(self, wrapped, highlight, hide);
+
+                if (config.useMarkdown > 1) {
+                    Utils.Dom.transformMarkdownSource(wrapped);
+                }
+
+                Utils.Dom.embedYoutube(wrapped);
+            });
         }
 
         resetAvatars() {
@@ -1778,12 +2676,31 @@ sinner(function () {
     }
 
     class BookPage extends Page {
+        constructor() {
+            super();
+
+            this.editor = null;
+            this.editorUniqueId = 'book';
+        }
+
         initialize() {
             super.initialize();
 
             document.querySelectorAll('body > div > table')[3]
                 .querySelectorAll('tbody > tr')[1]
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+
+            return this;
+        }
+
+        async process() {
+            super.process();
+
+            Utils.Dom.embedMarkdownEditorSwitcher('TEXT ZÁPISU:');
+
+            if (config.useMarkdown > 1) {
+                this.editor = Utils.Dom.createMarkdownEditor();
+            }
         }
 
         async processNicks() {
@@ -1821,18 +2738,37 @@ sinner(function () {
                     }
                 }
 
+                el.querySelectorAll('.userLinks').forEach(function (el) {
+                    el.remove();
+                });
                 el.prepend(linksEl);
-                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide);
+                Utils.Dom.embedUserLinks(linksEl, text, highlight, hide, el.parentElement.querySelector('div.guesttext'));
             });
         }
 
         async processTexts() {
             await super.processTexts();
 
-            let highlight = await Utils.Db.getIdioms('word', true),
+            let self = this,
+                highlight = await Utils.Db.getIdioms('word', true),
                 hide = await Utils.Db.getIdioms('word', false);
 
-            Utils.Dom.wrapElementWords(this, 'div.guesttext', highlight, hide);
+            document.querySelectorAll('div.guesttext').forEach(function (el) {
+                let wrapped = el.querySelector('span.originalContent')
+
+                if (!wrapped) {
+                    el.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(el.innerHTML) + '</span>';
+                    wrapped = el.querySelector('span.originalContent');
+                }
+
+                Utils.Dom.wrapElementWords(self, wrapped, highlight, hide);
+
+                if (config.useMarkdown > 1) {
+                    Utils.Dom.transformMarkdownSource(wrapped);
+                }
+
+                Utils.Dom.embedYoutube(wrapped);
+            });
         }
     }
 
@@ -1843,6 +2779,8 @@ sinner(function () {
             document.querySelectorAll('body > div > table')[4]
                 .querySelector('tbody > tr')
                 .querySelectorAll('td.boxheader')[1].id = this.countersContainer;
+
+            return this;
         }
 
         async process() {
@@ -1944,6 +2882,15 @@ sinner(function () {
         case 'zpovperl':
             page = new PostPage;
             break;
+        case 'souhlas':
+            page = new PostPreviewPage;
+            break;
+        case 'souhlasr':
+            page = new PostCommentPreviewPage;
+            break;
+        case 'vlastnizp':
+            page = new PostAddPage;
+            break;
         case 'profil':
             page = new ProfilePage;
             break;
@@ -1954,13 +2901,13 @@ sinner(function () {
             page = new StatsPage;
             break;
         default:
-            console.error('ZPOVEDNICAR unknown page ' + path);
-            return;
+            page = new Page;
+            break;
     }
 
     Utils.Css.initializeStylesheet();
 
     GM_registerMenuCommand(gettext.__('Settings'), page.modal);
 
-    page.process();
+    page.initialize().process();
 });
