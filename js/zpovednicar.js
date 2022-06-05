@@ -1026,6 +1026,7 @@ sinner(function () {
                 parseMarkdown: function (html) {
                     let text = html
                             // common replacements
+                            .replace(/&amp;/g, '&')
                             .replace(/&nbsp;/g, ' ')
                             .replace(/&quot;/g, '"')
                             .replace(/&( )?lt;/g, '<')
