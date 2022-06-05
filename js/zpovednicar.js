@@ -190,7 +190,9 @@ sinner(function () {
                         mermaid.init(undefined, el.querySelectorAll('div.mermaid'));
                     }, 100);
 
-                    return Utils.String.parseMarkdown(text);
+                    return Utils.String.parseMarkdown(
+                        Utils.String.parseEmojis(text)
+                    );
                 },
                 // lineWrapping: false
                 renderingConfig: {
@@ -782,8 +784,8 @@ sinner(function () {
                         e.preventDefault();
 
                         if (e.target.classList.contains('fa-eye-slash')) {
-                            textEl.parentElement.querySelector('.markdownParsed').remove();
-                            textEl.parentElement.querySelector('.originalContent').classList.remove('markdownSource');
+                            textEl.parentElement.querySelector('.parsedContent').remove();
+                            textEl.parentElement.querySelector('.originalContent').classList.remove('unparsedContent');
                             e.target.classList.remove('fa-eye-slash')
                             e.target.classList.add('fa-eye')
                             e.target.parentElement.setAttribute('title', gettext.__('Show formatted text'));
@@ -948,8 +950,8 @@ sinner(function () {
 
                     cloned.innerHTML = Utils.String.parseMarkdown(el.innerHTML);
                     cloned.classList.remove('originalContent');
-                    cloned.classList.add('markdownParsed');
-                    el.classList.add('markdownSource');
+                    cloned.classList.add('parsedContent');
+                    el.classList.add('unparsedContent');
                     el.after(cloned);
 
                     cloned.querySelectorAll('div.mermaid').forEach(function (el) {
@@ -1003,18 +1005,27 @@ sinner(function () {
                 noAccent: function (str) {
                     return str.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                 },
-                parseMarkdown: function (html) {
+                parseEmojis: function (html) {
                     let text = html.trim()
+                        // encoded unicode characters (mostly native emoticons, but not exclusively)
+                        .replace(/&amp;#/g, '&#')
+                        .replace(/&#\d+;/g, function (encoded) {
+                            return decodeURIComponent(encoded);
+                        });
+
+                    return marked.emojiConvertor.replace_unified(
+                        marked.emojiConvertor.replace_colons(
+                            marked.emojiConvertor.replace_emoticons(text)
+                        )
+                    );
+                },
+                parseMarkdown: function (html) {
+                    let text = html
                             // common replacements
                             .replace(/&nbsp;/g, ' ')
                             .replace(/&quot;/g, '"')
                             .replace(/&lt;/g, '<')
                             .replace(/&( )?gt;/g, '>')
-                            // encoded unicode characters (mostly native emoticons, but not exclusively)
-                            .replace(/&amp;#/g, '&#')
-                            .replace(/&#\d+;/g, function (encoded) {
-                                return decodeURIComponent(encoded);
-                            })
                             /*
                                 TODO fix blockquote marks nested by mistake (ones without previous higher levels)
                                 .replace(/(>)\1+/g, '>')
@@ -1034,14 +1045,9 @@ sinner(function () {
                             .replace(/!?\[(.*[^\]])\](\s*)\((\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)(\S*[^)])(\s*)\)/g, function (link) {
                                 return link.replace(/\s+/g, '');
                             }),
-                        markdown = marked.emojiConvertor.replace_unified(
-                            marked.emojiConvertor.replace_colons(
-                                marked.emojiConvertor.replace_emoticons(text)
-                            )
-                        ),
                         //TODO verify that marked.setOptions() in Page.initialize() works as expected
                         // dirty = marked.parse(sourceWithEmojis),
-                        dirty = marked.parse(markdown, config.parserOptions),
+                        dirty = marked.parse(text, config.parserOptions),
                         //TODO verify that DOMPurify.setConfig() in Page.initialize() works as expected
                         // clean = DOMPurify.sanitize(dirty);
                         clean = DOMPurify.sanitize(dirty, config.sanitizerOptions);
@@ -2006,11 +2012,11 @@ sinner(function () {
                 Utils.String.unwrap(el);
             });
 
-            document.querySelectorAll('.markdownParsed, .youtubeThumbnails').forEach(function (el) {
+            document.querySelectorAll('.parsedContent, .youtubeThumbnails').forEach(function (el) {
                 el.remove();
             });
 
-            Utils.Css.removeClass('markdownSource');
+            Utils.Css.removeClass('unparsedContent');
         }
 
         resetUnregistered() {
@@ -2165,7 +2171,7 @@ sinner(function () {
                 parent = el.parentElement.parentElement.parentElement.parentElement.parentElement.parentElement,
                 superParent = parent.parentElement.parentElement.parentElement,
                 infoParent = document.querySelectorAll('td.conftext')[1],
-                infoWrapper = infoParent.classList.contains('markdownParsed') ? document.querySelectorAll('td.conftext')[2] : infoParent,
+                infoWrapper = infoParent.classList.contains('parsedContent') ? document.querySelectorAll('td.conftext')[2] : infoParent,
                 info = infoWrapper.querySelectorAll('td.signinfo')[1],
                 linksEl = Object.assign(document.createElement('span'), {
                     className: 'userLinks'
@@ -2258,7 +2264,7 @@ sinner(function () {
 
             if (!isQuotes) {
                 if (!wrapped) {
-                    content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                    content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
                     wrapped = content.querySelector('span.originalContent');
                 }
 
@@ -2301,7 +2307,7 @@ sinner(function () {
                 }
 
                 if (!wrappedEl) {
-                    textEl.innerHTML = '<span class="originalContent">' + textEl.innerHTML + '</span>';
+                    textEl.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(textEl.innerHTML) + '</span>';
                     wrappedEl = textEl.querySelector('span.originalContent');
                 }
 
@@ -2374,7 +2380,7 @@ sinner(function () {
                 wrapped = content.querySelector('span.originalContent');
 
             if (!wrapped) {
-                content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
                 wrapped = content.querySelector('span.originalContent');
             }
 
@@ -2449,7 +2455,7 @@ sinner(function () {
                 wrapped = content.querySelector('span.originalContent');
 
             if (!wrapped) {
-                content.innerHTML = '<span class="originalContent">' + content.innerHTML + '</span>';
+                content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
                 wrapped = content.querySelector('span.originalContent');
             }
 
@@ -2646,7 +2652,7 @@ sinner(function () {
                 let wrapped = el.querySelector('span.originalContent')
 
                 if (!wrapped) {
-                    el.innerHTML = '<span class="originalContent">' + el.innerHTML + '</span>';
+                    el.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(el.innerHTML) + '</span>';
                     wrapped = el.querySelector('span.originalContent');
                 }
 
@@ -2751,7 +2757,7 @@ sinner(function () {
                 let wrapped = el.querySelector('span.originalContent')
 
                 if (!wrapped) {
-                    el.innerHTML = '<span class="originalContent">' + el.innerHTML + '</span>';
+                    el.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(el.innerHTML) + '</span>';
                     wrapped = el.querySelector('span.originalContent');
                 }
 
