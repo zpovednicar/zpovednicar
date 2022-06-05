@@ -1011,6 +1011,10 @@ sinner(function () {
                         .replace(/&amp;#/g, '&#')
                         .replace(/&#\d+;/g, function (encoded) {
                             return decodeURIComponent(encoded);
+                        })
+                        // lines with break must end with empty char for the replace_emoticons to work properly
+                        .replace(/<br>/g, function (line) {
+                            return ' <br>';
                         });
 
                     return marked.emojiConvertor.replace_unified(
@@ -2268,6 +2272,8 @@ sinner(function () {
                     wrapped = content.querySelector('span.originalContent');
                 }
 
+                header.innerHTML = Utils.String.parseEmojis(header.innerHTML);
+
                 if (config.useHiding) {
                     if (Utils.String.containsWord(header, hide)) {
                         header.innerHTML = Utils.String.wrapAll(header, hide, 'strikeWord');
@@ -2383,6 +2389,8 @@ sinner(function () {
                 content.innerHTML = '<span class="originalContent">' + Utils.String.parseEmojis(content.innerHTML) + '</span>';
                 wrapped = content.querySelector('span.originalContent');
             }
+
+            header.innerHTML = Utils.String.parseEmojis(header.innerHTML);
 
             if (config.useHiding) {
                 if (Utils.String.containsWord(header, hide)) {
