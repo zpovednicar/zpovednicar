@@ -1028,7 +1028,7 @@ sinner(function () {
                             // common replacements
                             .replace(/&nbsp;/g, ' ')
                             .replace(/&quot;/g, '"')
-                            .replace(/&lt;/g, '<')
+                            .replace(/&( )?lt;/g, '<')
                             .replace(/&( )?gt;/g, '>')
                             /*
                                 TODO fix blockquote marks nested by mistake (ones without previous higher levels)
