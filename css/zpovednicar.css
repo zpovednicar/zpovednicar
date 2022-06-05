@@ -144,6 +144,16 @@ span.emoji-outer {
     vertical-align: middle;
 }
 
+div.mermaid > svg {
+    background: #90CCF1;
+    color: black;
+    border-radius: .4rem;
+    font-size: 86%;
+    margin: 0 .2rem;
+    padding: .2rem .5rem;
+    white-space: nowrap;
+}
+
 .CodeMirror-code {
     font-family: tahoma, arial;
     font-size: 13px;
