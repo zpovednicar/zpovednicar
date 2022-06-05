@@ -70,7 +70,7 @@ ul.sinnerList a, ul.sinnerList a:visited {
 }
 
 #conflist ul.hiddenUser, #conflist ul.hiddenWord, tr.hiddenDeleted, tr.hiddenUser, tr.unregisteredUser,
-tr.hiddenWord, .markdownSource, .hiddenSmiley {
+tr.hiddenWord, .unparsedContent, .hiddenSmiley {
     display: none;
 }
 
@@ -180,27 +180,27 @@ div.mermaid > svg {
     padding-left: 8px;
 }
 
-.markdownParsed, .editor-preview-full, .editor-preview-side {
+.parsedContent, .editor-preview-full, .editor-preview-side {
     font-family: 'Times New Roman', Times, serif, 'Segoe UI Emoji', 'Segoe UI Symbol', 'Segoe UI',
     'Apple Color Emoji', 'Twemoji Mozilla', 'Noto Color Emoji', 'EmojiOne Color',
     'Android Emoji';
 }
 
-.markdownParsed p,
+.parsedContent p,
 .editor-preview-full p,
 .editor-preview-side p {
     margin-block-start: 0px;
     margin-top: 0;
 }
 
-.markdownParsed a, .markdownParsed a:visited,
+.parsedContent a, .parsedContent a:visited,
 .editor-preview-full a, .editor-preview-full a:visited,
 .editor-preview-side a, .editor-preview-side a:visited {
     font-size: 100%;
     color: #90CCF1;
 }
 
-.markdownParsed blockquote,
+.parsedContent blockquote,
 .editor-preview-full blockquote,
 .editor-preview-side blockquote {
     border-left: 0.3rem solid #90CCF1;
@@ -209,13 +209,13 @@ div.mermaid > svg {
     padding: 0.5rem 1rem;
 }
 
-.markdownParsed blockquote *:last-child,
+.parsedContent blockquote *:last-child,
 .editor-preview-full blockquote *:last-child,
 .editor-preview-side blockquote *:last-child {
     margin-bottom: 0;
 }
 
-.markdownParsed code,
+.parsedContent code,
 .editor-preview-full code,
 .editor-preview-side code {
     background: #90CCF1;
@@ -227,7 +227,7 @@ div.mermaid > svg {
     white-space: nowrap;
 }
 
-.markdownParsed pre,
+.parsedContent pre,
 .editor-preview-full pre,
 .editor-preview-side pre {
     background: #90CCF1;
@@ -236,7 +236,7 @@ div.mermaid > svg {
     margin-bottom: 10px;
 }
 
-.markdownParsed pre > code,
+.parsedContent pre > code,
 .editor-preview-full pre > code,
 .editor-preview-side pre > code {
     border-radius: 0;
@@ -245,7 +245,7 @@ div.mermaid > svg {
     white-space: pre;
 }
 
-.markdownParsed hr,
+.parsedContent hr,
 .editor-preview-full hr,
 .editor-preview-side hr {
     border: 0;
@@ -253,7 +253,7 @@ div.mermaid > svg {
     margin: 2.0rem 0;
 }
 
-.markdownParsed table,
+.parsedContent table,
 .editor-preview-full table,
 .editor-preview-side table {
     border-spacing: 0;
@@ -267,59 +267,59 @@ div.mermaid > svg {
     /*!*overflow-x: initial;*!*/
 }
 
-.markdownParsed td,
+.parsedContent td,
 .editor-preview-full td,
 .editor-preview-side td,
-.markdownParsed th,
+.parsedContent th,
 .editor-preview-full th,
 .editor-preview-side th {
     border: 1px solid #90CCF1;
     padding: 5px;
 }
 
-.markdownParsed td:first-child,
+.parsedContent td:first-child,
 .editor-preview-full td:first-child,
 .editor-preview-side td:first-child,
-.markdownParsed th:first-child,
+.parsedContent th:first-child,
 .editor-preview-full th:first-child,
 .editor-preview-side th:first-child {
     padding-left: 0.2rem;
 }
 
-.markdownParsed td:last-child,
+.parsedContent td:last-child,
 .editor-preview-full td:last-child,
 .editor-preview-side td:last-child,
-.markdownParsed th:last-child,
+.parsedContent th:last-child,
 .editor-preview-full th:last-child,
 .editor-preview-side th:last-child {
     padding-right: 0.2rem;
 }
 
-.markdownParsed b,
+.parsedContent b,
 .editor-preview-full b,
 .editor-preview-side b,
-.markdownParsed strong,
+.parsedContent strong,
 .editor-preview-full strong,
 .editor-preview-side strong {
     font-weight: bold;
 }
 
-.markdownParsed h1,
+.parsedContent h1,
 .editor-preview-full h1,
 .editor-preview-side h1,
-.markdownParsed h2,
+.parsedContent h2,
 .editor-preview-full h2,
 .editor-preview-side h2,
-.markdownParsed h3,
+.parsedContent h3,
 .editor-preview-full h3,
 .editor-preview-side h3,
-.markdownParsed h4,
+.parsedContent h4,
 .editor-preview-full h4,
 .editor-preview-side h4,
-.markdownParsed h5,
+.parsedContent h5,
 .editor-preview-full h5,
 .editor-preview-side h5,
-.markdownParsed h6,
+.parsedContent h6,
 .editor-preview-full h6,
 .editor-preview-side h6 {
     font-weight: 200;
@@ -329,46 +329,46 @@ div.mermaid > svg {
     line-height: 1.2;
 }
 
-.markdownParsed h1,
+.parsedContent h1,
 .editor-preview-full h1,
 .editor-preview-side h1 {
     font-size: 2.3rem;
 }
 
-.markdownParsed h2,
+.parsedContent h2,
 .editor-preview-full h2,
 .editor-preview-side h2 {
     font-size: 2rem;
 }
 
-.markdownParsed h3,
+.parsedContent h3,
 .editor-preview-full h3,
 .editor-preview-side h3 {
     font-size: 1.7rem;
 }
 
-.markdownParsed h4,
+.parsedContent h4,
 .editor-preview-full h4,
 .editor-preview-side h4 {
     font-size: 1.4rem;
     letter-spacing: -.08rem;
 }
 
-.markdownParsed h5,
+.parsedContent h5,
 .editor-preview-full h5,
 .editor-preview-side h5 {
     font-size: 1.2rem;
     letter-spacing: -.05rem;
 }
 
-.markdownParsed h6,
+.parsedContent h6,
 .editor-preview-full h6,
 .editor-preview-side h6 {
     font-size: 1rem;
     letter-spacing: 0;
 }
 
-.markdownParsed img,
+.parsedContent img,
 .editor-preview-full img,
 .editor-preview-side img {
     max-width: 100%;
