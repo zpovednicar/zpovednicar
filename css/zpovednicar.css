@@ -227,6 +227,12 @@ div.mermaid > svg {
     white-space: nowrap;
 }
 
+.parsedContent code a, .parsedContent code a:visited,
+.editor-preview-full code a, .editor-preview-full code a:visited,
+.editor-preview-side code a, .editor-preview-side code a:visited {
+    color: black;
+}
+
 .parsedContent pre,
 .editor-preview-full pre,
 .editor-preview-side pre {
