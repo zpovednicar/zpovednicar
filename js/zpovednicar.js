@@ -506,6 +506,11 @@ sinner(function () {
                         page.editor = null;
                     }
                 },
+                //TODO #37 Event.Config handlers
+                // useEmoticonsChangeListener: async function (key, old_value, new_value, remote) {},
+                // useMermaidChangeListener: async function (key, old_value, new_value, remote) {},
+                // useEditorChangeListener: async function (key, old_value, new_value, remote) {},
+                // useEmoticonsPopupChangeListener: async function (key, old_value, new_value, remote) {},
                 youtubeThumbnailChangeListener: async function (key, old_value, new_value, remote) {
                     config.youtubeThumbnail = new_value;
                     page.resetTexts();
@@ -1620,6 +1625,10 @@ sinner(function () {
                     GM_setValue('sinner.youtubeThumbnail', parseInt(e.target.value))
                 };
                 document.getElementById('useMarkdown').onchange = function (e) {
+                    //TODO config.useMarkdown
+                    // - enabling/disabling subsequent config options useMermaid, useEditor and useEmoticonsPopup
+                    // @require      https://cdn.jsdelivr.net/npm/marked@4.0.16/lib/marked.umd.min.js
+                    // @require      https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js
                     GM_setValue('sinner.useMarkdown', parseInt(e.target.value))
                 };
 
@@ -1651,6 +1660,42 @@ sinner(function () {
                 document.querySelectorAll('input[name="transformAvatars"]').forEach(function (input) {
                     input.addEventListener('change', function (e) {
                         GM_setValue('sinner.transformAvatars', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="useEmoticons"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        //TODO config.useEmoticons
+                        // - enabling/disabling subsequent useEmoticonsPopup
+                        // @resource     CSS_EMOJI https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.css
+                        // @require      https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.js
+                        // GM_setValue('sinner.useEmoticons', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="useMermaid"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        //TODO config.useMermaid
+                        // - dependency on useMarkdown
+                        // @require      https://unpkg.com/mermaid@9.1.1/dist/mermaid.min.js
+                        // GM_setValue('sinner.useMermaid', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="useEditor"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        //TODO config.useEditor
+                        // - enabling/disabling subsequent config option useEmoticonsPopup
+                        // - dependency on useMarkdown
+                        // @resource     CSS_EASYMDE https://unpkg.com/easymde@2.16.1/dist/easymde.min.css
+                        // @require      https://unpkg.com/easymde@2.16.1/dist/easymde.min.js
+                        // GM_setValue('sinner.useEditor', Boolean(parseInt(e.target.value)))
+                    });
+                });
+                document.querySelectorAll('input[name="useEmoticonsPopup"]').forEach(function (input) {
+                    input.addEventListener('change', function (e) {
+                        //TODO config.useEmoticonsPopup
+                        // - dependency on useEmoticons, useEditor and useMarkdown
+                        // @require      https://unpkg.com/picmo@5.1.1/dist/umd/picmo.js
+                        // @require      https://unpkg.com/@picmo/popup-picker@5.1.1/dist/umd/picmo-popup.js
+                        // GM_setValue('sinner.useEmoticonsPopup', Boolean(parseInt(e.target.value)))
                     });
                 });
                 document.querySelector('div.tingle-modal-box__footer').appendChild(form);
@@ -1923,6 +1968,11 @@ sinner(function () {
             GM_addValueChangeListener('sinner.useHiding', Events.Config.useHidingChangeListener);
             GM_addValueChangeListener('sinner.useHighlighting', Events.Config.useHighlightingChangeListener);
             GM_addValueChangeListener('sinner.useMarkdown', Events.Config.useMarkdownChangeListener);
+            //TODO #37 Event.Config handlers initialization
+            // GM_addValueChangeListener('sinner.useEmoticons', Events.Config.useEmoticonsChangeListener);
+            // GM_addValueChangeListener('sinner.useMermaid', Events.Config.useMermaidChangeListener);
+            // GM_addValueChangeListener('sinner.useEditor', Events.Config.useEditorChangeListener);
+            // GM_addValueChangeListener('sinner.useEmoticonsPopup', Events.Config.useEmoticonsPopupChangeListener);
             GM_addValueChangeListener('sinner.transformAnchors', Events.Config.transformAnchorsChangeListener);
             GM_addValueChangeListener('sinner.transformAvatars', Events.Config.transformAvatarsChangeListener);
             GM_addValueChangeListener('sinner.youtubeThumbnail', Events.Config.youtubeThumbnailChangeListener);
