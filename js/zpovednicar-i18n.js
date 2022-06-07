@@ -78,6 +78,10 @@ const sinnerI18n = {
             'Skryté výrazy: %1',
             'Skrytých výrazů: %1'
         ],
+        'Use emoticons': 'Používat emotikony',
+        'Use emoticons popup': 'Používat nabídku emotikonů',
+        'Use Mermaid diagrams': 'Používat diagramy Mermaid',
+        'Use text editor': 'Používat textový editor',
         'Use formatted text': 'Používat formátování textu',
         'Format selected only': 'Jen vybrané texty',
         'Format everything': 'Všechny texty',
@@ -208,6 +212,10 @@ const sinnerI18n = {
             'Skryté výrazy: %1',
             'Skrytých výrazov: %1'
         ],
+        'Use emoticons': 'Používať emotikony',
+        'Use emoticons popup': 'Používať ponuku emotikonov',
+        'Use Mermaid diagrams': 'Používať diagramy Mermaid',
+        'Use text editor': 'Používať textový editor',
         'Use formatted text': 'Používať formátovanie textu',
         'Format selected only': 'Len vybrané texty',
         'Format everything': 'Všetky texty',

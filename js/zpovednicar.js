@@ -59,6 +59,10 @@ sinner(function () {
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
+            useEmoticons: GM_getValue('sinner.useEmoticons', true),
+            useEmoticonsPopup: GM_getValue('sinner.useEmoticonsPopup', true),
+            useMermaid: GM_getValue('sinner.useMermaid', true),
+            useEditor: GM_getValue('sinner.useEditor', true),
             useMarkdown: GM_getValue('sinner.useMarkdown', 2),
             useMarkdowns: new Map([
                 [0, gettext.__('-- do not use --')],
@@ -1478,17 +1482,71 @@ sinner(function () {
                     '</div>' +
                     '<div class="row">' +
                     '<div class="column-wide">' +
-                    '<span class="fas fa-eye"></span>&nbsp;' +
-                    gettext.__('Use formatted text') +
+                    gettext.__('Use emoticons') +
                     ':' +
                     '</div>' +
                     '<div class="column-narrow">' +
+                    '<input type="radio" name="useEmoticons" id="useEmoticonsYes"' + (config.useEmoticons ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="useEmoticonsYes">' + gettext.__('Yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="useEmoticons" id="useEmoticonsNo"' + (config.useEmoticons ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="useEmoticonsNo">' + gettext.__('No') + '</label>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    '<p>' +
+                    '<span class="fas fa-eye"></span>&nbsp;' +
+                    gettext.__('Use formatted text') +
+                    ':</p>' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
+                    '<p>' +
                     '<select id="useMarkdown">';
                 config.useMarkdowns.forEach(function (label, key) {
                     modalContent += '<option value="' + key + '"' + (key === config.useMarkdown ? ' selected' : '') + '>' + label + '</option>';
                 })
                 modalContent +=
                     '</select>' +
+                    '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    gettext.__('Use Mermaid diagrams') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
+                    '<input type="radio" name="useMermaid" id="useMermaidYes"' + (config.useMermaid ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="useMermaidYes">' + gettext.__('Yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="useMermaid" id="useMermaidNo"' + (config.useMermaid ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="useMermaidNo">' + gettext.__('No') + '</label>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    '<p>' +
+                    gettext.__('Use text editor') +
+                    ':</p>' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
+                    '<p>' +
+                    '<input type="radio" name="useEditor" id="useEditorYes"' + (config.useEditor ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="useEditorYes">' + gettext.__('Yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="useEditor" id="useEditorNo"' + (config.useEditor ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="useEditorNo">' + gettext.__('No') + '</label>' +
+                    '</p>' +
+                    '</div>' +
+                    '</div>' +
+                    '<div class="row">' +
+                    '<div class="column-wide">' +
+                    gettext.__('Use emoticons popup') +
+                    ':' +
+                    '</div>' +
+                    '<div class="column-narrow">' +
+                    '<input type="radio" name="useEmoticonsPopup" id="useEmoticonsPopupYes"' + (config.useEmoticonsPopup ? ' checked' : '') + ' value="1">&nbsp;' +
+                    '<label for="useEmoticonsPopupYes">' + gettext.__('Yes') + '</label>&nbsp;' +
+                    '<input type="radio" name="useEmoticonsPopup" id="useEmoticonsPopupNo"' + (config.useEmoticonsPopup ? '' : ' checked') + ' value="0">&nbsp;' +
+                    '<label for="useEmoticonsPopupNo">' + gettext.__('No') + '</label>' +
                     '</div>' +
                     '</div>' +
                     '<div class="row">' +
