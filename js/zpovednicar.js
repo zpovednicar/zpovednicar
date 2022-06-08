@@ -1,22 +1,88 @@
 'use strict';
 
-document.getElementsByTagName('head')[0].appendChild(Object.assign(document.createElement('link'), {
-    rel: 'stylesheet',
-    href: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css'
-}));
+const featureFlags = {
+        useEmoticons: GM_getValue('sinner.useEmoticons', true),
+        useEmoticonsPopup: GM_getValue('sinner.useEmoticonsPopup', true),
+        useMermaid: GM_getValue('sinner.useMermaid', true),
+        useEditor: GM_getValue('sinner.useEditor', true),
+        useMarkdown: GM_getValue('sinner.useMarkdown', 2)
+    },
+    head = document.getElementsByTagName('head')[0],
+    scriptPromise = function (src) {
+        return new Promise(function (resolve, reject) {
+            let script = Object.assign(document.createElement('script'), {
+                src: src,
+                type: 'text/javascript',
+                async: true,
+                onload: function () {
+                    resolve('ok');
+                }
+            });
 
-for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_EMOJI', 'CSS_EASYMDE', 'CSS_CUSTOM']) {
-    GM_addStyle(GM_getResourceText(resource));
+            head.appendChild(script);
+        });
+    },
+    stylePromise = function (src) {
+        return new Promise(function (resolve, reject) {
+            let stylesheet = Object.assign(document.createElement('link'), {
+                href: src,
+                rel: 'stylesheet',
+                type: 'text/css',
+                media: 'only nothing', // trick for stylesheet async loading even in the head element
+                onload: function () {
+                    stylesheet.media = 'all';
+                    resolve('ok');
+                }
+            });
+
+            head.appendChild(stylesheet);
+        });
+    },
+    assetPromises = [
+        // FontAwesome can't be loaded as a Tampermonkey resource (it uses relative URIs for webfonts)
+        stylePromise('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css')
+    ],
+    sinnerStyle = (function () {
+        let el = document.createElement('style');
+
+        el.appendChild(document.createTextNode(''));
+        head.appendChild(el);
+
+        return el;
+    })();
+
+if (featureFlags.useEmoticons) {
+    assetPromises.push(stylePromise('https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.css'));
+    assetPromises.push(scriptPromise('https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.js'));
 }
 
-const sinnerStyle = (function () {
-    let el = document.createElement('style');
+if (featureFlags.useMarkdown > 0) {
+    assetPromises.push(scriptPromise('https://cdn.jsdelivr.net/npm/marked@4.0.16/lib/marked.umd.min.js'));
+    assetPromises.push(scriptPromise('https://cdnjs.cloudflare.com/ajax/libs/dompurify/2.3.8/purify.min.js'));
 
-    el.appendChild(document.createTextNode(''));
-    document.head.appendChild(el);
+    if (featureFlags.useMermaid) {
+        assetPromises.push(scriptPromise('https://unpkg.com/mermaid@9.1.1/dist/mermaid.min.js'));
+    }
 
-    return el;
-})();
+    if (featureFlags.useEditor) {
+        assetPromises.push(stylePromise('https://unpkg.com/easymde@2.16.1/dist/easymde.min.css'));
+        assetPromises.push(scriptPromise('https://unpkg.com/easymde@2.16.1/dist/easymde.min.js'));
+
+        if (featureFlags.useEmoticonsPopup && featureFlags.useEmoticons) {
+            assetPromises.push(
+                scriptPromise('https://unpkg.com/picmo@5.1.1/dist/umd/picmo.js').then(function () {
+                    return scriptPromise('https://unpkg.com/@picmo/popup-picker@5.1.1/dist/umd/picmo-popup.js');
+                })
+            );
+        }
+    }
+}
+
+await Promise.all(assetPromises);
+
+for (let resource of ['CSS_TINGLE', 'CSS_TABBY', 'CSS_MODAL', 'CSS_PICKER', 'CSS_CUSTOM']) {
+    GM_addStyle(GM_getResourceText(resource));
+}
 
 function sinner(callback) {
     if (document.readyState !== 'loading') {
@@ -44,7 +110,7 @@ sinner(function () {
         page,
         settingsModal;
 
-    const config = {
+    const config = Object.assign({
             color: GM_getValue('sinner.highlightColor', '#ff0000'),
             domain: GM_getValue('sinner.enforceDomain', '.'),
             domains: new Map([
@@ -59,11 +125,6 @@ sinner(function () {
             transformAvatars: GM_getValue('sinner.transformAvatars', true),
             useHiding: GM_getValue('sinner.useHiding', true),
             useHighlighting: GM_getValue('sinner.useHighlighting', true),
-            useEmoticons: GM_getValue('sinner.useEmoticons', true),
-            useEmoticonsPopup: GM_getValue('sinner.useEmoticonsPopup', true),
-            useMermaid: GM_getValue('sinner.useMermaid', true),
-            useEditor: GM_getValue('sinner.useEditor', true),
-            useMarkdown: GM_getValue('sinner.useMarkdown', 2),
             useMarkdowns: new Map([
                 [0, gettext.__('-- do not use --')],
                 [1, gettext.__('Format selected only')],
@@ -379,7 +440,7 @@ sinner(function () {
                 ['s13.gif', ':_)'],
                 ['s18.gif', ':-!']
             ])
-        },
+        }, featureFlags),
         cssRules = new Map([
             ['homeHighlightUser', {
                 selector: '#conflist li.highlightUser',
