@@ -51,6 +51,8 @@ const featureFlags = {
         return el;
     })();
 
+sinnerStyle.sheet.insertRule('.clr-picker { display: none }', 0);
+
 if (featureFlags.useEmoticons) {
     assetPromises.push(stylePromise('https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.css'));
     assetPromises.push(scriptPromise('https://cdnjs.cloudflare.com/ajax/libs/emoji-js/3.7.0/emoji.min.js'));
@@ -448,7 +450,7 @@ sinner(function () {
                     ['font-weight', 'bold'],
                     ['color', config.color]
                 ]),
-                index: 0
+                index: 1
             }],
             ['postHighlightUser', {
                 selector: 'tr.highlightUser, td.highlightUser',
@@ -457,14 +459,14 @@ sinner(function () {
                     ['outline-width', '2px'],
                     ['outline-color', config.color]
                 ]),
-                index: 1
+                index: 2
             }],
             ['statsHighlightUser', {
                 selector: 'td.highlightStatsUser a',
                 style: new Map([
                     ['color', config.color]
                 ]),
-                index: 2
+                index: 3
             }],
             ['pageHighlightWord', {
                 selector: 'span.highlightWord',
@@ -472,7 +474,7 @@ sinner(function () {
                     ['color', '#000000'],
                     ['background-color', config.color]
                 ]),
-                index: 3
+                index: 4
             }],
             ['markdownHighlightMark', {
                 selector: 'mark',
@@ -481,7 +483,7 @@ sinner(function () {
                     ['padding', '0.1rem'],
                     ['background-color', config.color]
                 ]),
-                index: 4
+                index: 5
             }]
         ]),
         Events = {
