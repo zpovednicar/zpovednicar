@@ -28,7 +28,7 @@ const featureFlags = {
                 href: src,
                 rel: 'stylesheet',
                 type: 'text/css',
-                media: 'only nothing', // trick for stylesheet async loading even in the head element
+                media: 'only nothing', // trick for stylesheet async loading
                 onload: function () {
                     stylesheet.media = 'all';
                     resolve('ok');
