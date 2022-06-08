@@ -51,6 +51,7 @@ const featureFlags = {
         return el;
     })();
 
+// avoid Coloris Picker flicking in the viewport, its DOM tree is appended to the document body on the script load
 sinnerStyle.sheet.insertRule('.clr-picker { display: none }', 0);
 
 if (featureFlags.useEmoticons) {
